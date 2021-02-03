@@ -46,12 +46,12 @@ void DBG(int id, char *msg) {
 %token EQ GR GREQ LS LSEQ DIFF
 %token IF ELSE FOR PRINT WHILE
 
-%nonassoc IFX
-%nonassoc ELSE
+%precedence IFX
+%precedence ELSE
 
-%left ADD SUB OR
+%left ADD SUB OR XOR
 %left MUL DIV AND LS LSEQ GR GREQ
-%nonassoc NEG NEGATION ASSIGN
+%nonassoc NEG ASSIGN
 %left EQ
 
 %type<node> program statements statement statementBlock simpleStatement expressionStatement expression 
@@ -151,15 +151,15 @@ logicalExpression:
         |
             LPAREN logicalExpression RPAREN { $$ = $2; DBG(29, "a->b"); }
         |
-            expression LS expression { $$ = new LessLogicalExpression($1, $3); DBG(35, "logicalExpression->expression LS expression"); }
+            numericalExpression LS numericalExpression { $$ = new LessLogicalExpression($1, $3); DBG(35, "logicalExpression->numericalExpression LS numericalExpression"); }
         |
-            expression LSEQ expression { $$ = new LessEqualLogicalExpression($1, $3); DBG(35, "logicalExpression->expression LSEQ expression"); }
+            numericalExpression LSEQ numericalExpression { $$ = new LessEqualLogicalExpression($1, $3); DBG(35, "logicalExpression->numericalExpression LSEQ numericalExpression"); }
         |
-            expression GR expression { $$ = new GreaterLogicalExpression($1, $3); DBG(35, "logicalExpression->expression GR expression"); }
+            numericalExpression GR numericalExpression { $$ = new GreaterLogicalExpression($1, $3); DBG(35, "logicalExpression->numericalExpression GR numericalExpression"); }
         |
-            expression GREQ expression { $$ = new GreaterEqualLogicalExpression($1, $3); DBG(35, "logicalExpression->expression GREQ expression"); }
+            numericalExpression GREQ numericalExpression { $$ = new GreaterEqualLogicalExpression($1, $3); DBG(35, "logicalExpression->numericalExpression GREQ numericalExpression"); }
         |
-            expression EQ expression { $$ = new EqualLogicalExpression($1, $3); DBG(35, "logicalExpression->expression EQ expression"); }
+            numericalExpression EQ numericalExpression { $$ = new EqualLogicalExpression($1, $3); DBG(35, "logicalExpression->numericalExpression EQ numericalExpression"); }
         ;
 
 assignmentExpression:
