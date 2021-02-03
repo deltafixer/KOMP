@@ -8,7 +8,7 @@ ASTNode *root;
 unordered_map<string, int> varNameToID;
 
 extern int yylex(void);
-extern void yyerror(char*);
+extern void yyerror(string);
 extern int yylineno;
 extern FILE *yyin, *yyout;
 
@@ -19,14 +19,6 @@ void DBG(int id, string msg) {
     fprintf(stderr, "Line #%d, Rule #%d: %s\n", yylineno, id, msg.c_str());
     #endif
 }
-
-
-void DBG(int id, char *msg) {
-    #ifdef DEBUG
-    fprintf(stderr, "Line #%d, Rule #%d: %s\n", yylineno, id, msg);
-    #endif
-}
-
 
 %}
 
@@ -41,17 +33,20 @@ void DBG(int id, char *msg) {
 %token<floatVal> FLOAT
 %token<stringVal> IDENTIFIER
 
+%token QUESTION COLUMN
 %token LPAREN RPAREN LCURLY RCURLY SEMICOL COMMA END
-%token ADD SUB OR MUL DIV AND NEGATION XOR NOT
+%token ADD SUB OR MUL DIV AND XOR NOT INCR
 %token EQ GR GREQ LS LSEQ DIFF
-%token IF ELSE FOR PRINT WHILE
+%token IF ELSE FOR PRINT WHILE REPEAT UNTIL
 
 %precedence IFX
 %precedence ELSE
 
+%right COLUMN
+%right QUESTION
 %left ADD SUB OR XOR
 %left MUL DIV AND LS LSEQ GR GREQ
-%nonassoc NEG ASSIGN
+%nonassoc NEG ASSIGN INCR
 %left EQ
 
 %type<node> program statements statement statementBlock simpleStatement expressionStatement expression 
@@ -81,6 +76,8 @@ statement:
             statementBlock  { $$ = new StatementNode($1); DBG(3, "statement->statementBlock"); }
         |
             simpleStatement { $$ = new StatementNode($1); DBG(4, "statement->simpleStatement"); }
+        |
+            expressionStatement { $$ = new StatementNode($1); DBG(58, "statement->expressionStatement"); }
         ;
 
 statementBlock:
@@ -98,7 +95,9 @@ simpleStatement:
         |
             WHILE LPAREN expression RPAREN statement { $$ = new WhileNode($3, $5); DBG(10, "simpleStatement->WHILE LPAREN expression RPAREN statement"); }
         |
-            assignmentExpression SEMICOL { $$ = new AssignmentNode($1); DBG(11, "simpleStatement->assignmentExpression"); }
+            REPEAT statement UNTIL logicalExpression SEMICOL { $$ = new RepeatUntilNode($2, $4); DBG(56, "simpleStatement->REPEAT statementBlock UNTIL expression SEMICOL"); }
+        |
+            assignmentExpression SEMICOL { $$ = new AssignmentNode($1); DBG(11, "simpleStatement->assignmentExpression"); }   
         ;
 
 expressionStatement:
@@ -128,6 +127,8 @@ numericalExpression:
         |
             identifier { $$ = new IdentifierExpressionNode($1); DBG(22, "numericalExpression->identifier"); }
         |
+            identifier INCR { $$ = new IncrIdentifierNode($1);  DBG(57, "identifier INCR"); }
+        |
             constant { $$ = $1;  DBG(37, "numericalExpression->identifier");  }
         ;
 
@@ -147,7 +148,7 @@ logicalExpression:
         |
             logicalExpression XOR logicalExpression { $$ = new XorLogicalExpressionNode($1, $3);DBG(27, "a->b"); }
         |
-            NEGATION logicalExpression %prec NEG { $$ = new NegationLogicalExpressionNode($2); DBG(28, "a->b"); }
+            NOT logicalExpression %prec NEG { $$ = new NegationLogicalExpressionNode($2); DBG(28, "a->b"); }
         |
             LPAREN logicalExpression RPAREN { $$ = $2; DBG(29, "a->b"); }
         |
@@ -180,8 +181,8 @@ postFor:
 
 %%
 
-void yyerror(char *errMessage) {
-    fprintf(stderr, "Error in line %d: %s\n", yylineno, errMessage);
+void yyerror(string errMessage) {
+    fprintf(stderr, "Error in line %d: %s\n", yylineno, errMessage.c_str());
 }
 
 int testCase = 0;

@@ -36,6 +36,8 @@ class GreaterLogicalExpression;
 class GreaterEqualLogicalExpression;
 class EqualLogicalExpression;
 class NegationLogicalExpressionNode;
+class RepeatUntilNode;
+class IncrIdentifierNode;
 
 class ASTNodeVisitor
 {
@@ -77,4 +79,6 @@ public:
     virtual void visit(GreaterEqualLogicalExpression &node) = 0;
     virtual void visit(EqualLogicalExpression &node) = 0;
     virtual void visit(NegationLogicalExpressionNode &node) = 0;
+    virtual void visit(RepeatUntilNode &node) = 0;
+    virtual void visit(IncrIdentifierNode &node) = 0;
 };

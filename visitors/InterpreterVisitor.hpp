@@ -1,3 +1,4 @@
+
 #include "../ast/all.hpp"
 
 #include <deque>
@@ -12,6 +13,30 @@ public:
     InterpreterVisitor() {}
     virtual ~InterpreterVisitor() {}
 
+    virtual void visit(IncrIdentifierNode &node)
+    {
+        int old = m_idToValue[((IdentifierNode &)node.getChild(0)).id()]++;
+        m_results.push_back(old);
+    }
+    virtual void visit(RepeatUntilNode &node)
+    {
+        node.getChild(1).accept(*this);
+        if (m_results.back() == 1)
+            return;
+        m_results.pop_back();
+
+        while (true)
+        {
+            node.getChild(0).accept(*this);
+            m_results.pop_back();
+
+            node.getChild(1).accept(*this);
+            if (m_results.back() == 1)
+                break;
+            m_results.pop_back();
+        }
+        m_results.clear();
+    }
     virtual void visit(AddNumericalExpressionNode &node)
     {
         node.getChild(0).accept(*this);
