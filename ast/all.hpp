@@ -4,7 +4,7 @@
 #include <cstring>
 
 #include <iostream>
-#include <unordered_map> 
+#include <unordered_map>
 
 using namespace std;
 

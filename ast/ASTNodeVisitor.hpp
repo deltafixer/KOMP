@@ -11,7 +11,7 @@ class DivNumericalExpressionNode;
 class EmptyStatementNode;
 class ExpressionStatementNode;
 class FloatNode;
-class ForNode; 
+class ForNode;
 class IdentifierExpressionNode;
 class IdentifierNode;
 class IfElseNode;
@@ -37,7 +37,8 @@ class GreaterEqualLogicalExpression;
 class EqualLogicalExpression;
 class NegationLogicalExpressionNode;
 
-class ASTNodeVisitor {
+class ASTNodeVisitor
+{
 public:
     ASTNodeVisitor() {}
     virtual ~ASTNodeVisitor() {}
@@ -51,7 +52,7 @@ public:
     virtual void visit(EmptyStatementNode &node) = 0;
     virtual void visit(ExpressionStatementNode &node) = 0;
     virtual void visit(FloatNode &node) = 0;
-    virtual void visit(ForNode &node) = 0; 
+    virtual void visit(ForNode &node) = 0;
     virtual void visit(IdentifierExpressionNode &node) = 0;
     virtual void visit(IdentifierNode &node) = 0;
     virtual void visit(IfElseNode &node) = 0;
