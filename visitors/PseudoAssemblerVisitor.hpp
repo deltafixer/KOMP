@@ -12,6 +12,64 @@ public:
     PseudoAssemblerVisitor(ostream &out = cout) : m_out(out), m_lastLabel(0) {}
     virtual ~PseudoAssemblerVisitor() {}
 
+    virtual void visit(IncrIdentifierNode &node)
+    {
+        string lblIncr = nextLabel("INCR_");
+
+        string identifier = ((IdentifierNode &)node.getChild(0)).id();
+        if (m_name2id.count(identifier) == 0)
+            m_name2id[identifier] = m_name2id.size();
+
+        m_out << lblIncr << ":" << endl;
+        m_out << "\tPUSH ID#" << m_name2id[identifier] << endl;
+        m_out << "\tPOP tmp" << endl;
+
+        m_out << "\tPUSH tmp" << endl;
+        m_out << "\tPUSH 1" << endl;
+        m_out << "\tADD" << endl;
+
+        m_out << "\tPOP ID#" << m_name2id[identifier] << endl;
+        m_out << "\tPUSH tmp" << endl;
+    }
+    virtual void visit(RepeatUntilNode &node)
+    {
+        string lblRepeatBegin = nextLabel("REPEAT_BEGIN_");
+        string lblRepeatEnd = nextLabel("REPEAT_END_");
+
+        m_out << lblRepeatBegin << ":" << endl;
+        node.getChild(0).accept(*this);
+
+        node.getChild(1).accept(*this);
+        m_out << "\tPUSH 0" << endl;
+        m_out << "\tCMPEQ" << endl;
+        m_out << "\tNOT" << endl;
+        m_out << "\tJMPZERO " << lblRepeatBegin << endl;
+        m_out << lblRepeatEnd << ":" << endl;
+    }
+    virtual void visit(TripleQuestionNode &node)
+    {
+        string lblLt = nextLabel("QUESTION_LT_");
+        string lblEq = nextLabel("QUESTION_EQ_");
+        string lblEnd = nextLabel("QUESTION_END_");
+        node.getChild(0).accept(*this);
+        m_out << "\tPOP tmp" << endl;
+        m_out << "\tPUSH tmp" << endl;
+        m_out << "\tPUSH 0" << endl;
+        m_out << "\tCMPGE" << endl;
+        m_out << "\tJMPZERO " << lblLt << endl;
+        m_out << "\tPUSH tmp" << endl;
+        m_out << "\tPUSH 0" << endl;
+        m_out << "\tCMPEQ" << endl;
+        m_out << "\tJMPZERO " << lblEq << endl;
+        node.getChild(1).accept(*this);
+        m_out << "\tJMP " << lblEnd << endl;
+        m_out << lblLt << ":" << endl;
+        node.getChild(2).accept(*this);
+        m_out << "\tJMP " << lblEnd << endl;
+        m_out << lblEq << ":" << endl;
+        node.getChild(3).accept(*this);
+        m_out << lblEnd << ":" << endl;
+    }
     virtual void visit(AddNumericalExpressionNode &node)
     {
         node.getChild(0).accept(*this);

@@ -44,3 +44,6 @@ using namespace std;
 #include "GreaterEqualLogicalExpression.hpp"
 #include "EqualLogicalExpression.hpp"
 #include "NegationLogicalExpressionNode.hpp"
+#include "TripleQuestionNode.hpp"
+#include "RepeatUntilNode.hpp"
+#include "IncrIdentifierNode.hpp"

@@ -32,6 +32,8 @@ identifierChars [a-zA-Z0-9_]
 "("             { RETURN (LPAREN, "LPAREN"); }
 ")"             { RETURN (RPAREN, "RPAREN"); }
 
+"++"             { RETURN (INCR, "INCR"); }
+
 "+"             { RETURN (ADD, "ADD"); }
 "-"             { RETURN (SUB, "SUB"); }
 "*"             { RETURN (MUL, "MUL"); }
@@ -49,6 +51,9 @@ identifierChars [a-zA-Z0-9_]
 "^"             { RETURN (XOR, "XOR"); }
 "!"             { RETURN (NOT, "NOT"); }
 
+"?"                { RETURN (QUESTION, "QUESTION"); }
+":"                { RETURN (COLUMN, "COLUMN"); }
+
 "="             { RETURN (ASSIGN, "ASSIGN"); }
 
 {digit}+        { yylval.intVal = atoi(yytext); RETURN (INTEGER, "INTEGER"); }
@@ -60,6 +65,8 @@ identifierChars [a-zA-Z0-9_]
 (?i:for)           { RETURN (FOR, "FOR"); }
 (?i:print)         { RETURN (PRINT, "PRINT"); }
 (?i:while)         { RETURN (WHILE, "WHILE"); }
+(?i:repeat)         { RETURN (REPEAT, "REPEAT"); }
+(?i:until)         { RETURN (UNTIL, "UNTIL"); }
 
 {identifierStart}{identifierChars}* { yylval.stringVal = yytext; RETURN (IDENTIFIER, "IDENTIFIER"); }
 

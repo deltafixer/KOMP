@@ -1,3 +1,4 @@
+
 #include "../ast/all.hpp"
 
 #include <deque>
@@ -12,6 +13,60 @@ public:
     InterpreterVisitor() {}
     virtual ~InterpreterVisitor() {}
 
+    virtual void visit(IncrIdentifierNode &node)
+    {
+        int old = m_idToValue[((IdentifierNode &)node.getChild(0)).id()]++;
+        m_results.push_back(old);
+    }
+    virtual void visit(RepeatUntilNode &node)
+    {
+        node.getChild(1).accept(*this);
+        if (m_results.back() == 1)
+            return;
+        m_results.pop_back();
+
+        while (true)
+        {
+            node.getChild(0).accept(*this);
+            m_results.pop_back();
+
+            node.getChild(1).accept(*this);
+            if (m_results.back() == 1)
+                break;
+            m_results.pop_back();
+        }
+        m_results.clear();
+    }
+    virtual void visit(TripleQuestionNode &node)
+    {
+        node.getChild(0).accept(*this);
+        int subjectVal = m_results.back();
+        m_results.pop_back();
+        int tmpVal = 0;
+
+        if (subjectVal > 0)
+        {
+            node.getChild(1).accept(*this);
+            int gtZeroVal = m_results.back();
+            m_results.pop_back();
+            tmpVal = gtZeroVal;
+        }
+        else if (subjectVal)
+        {
+            node.getChild(2).accept(*this);
+            int eqZeroVal = m_results.back();
+            m_results.pop_back();
+            tmpVal = eqZeroVal;
+        }
+        else
+        {
+            node.getChild(3).accept(*this);
+            int ltZeroVal = m_results.back();
+            m_results.pop_back();
+            tmpVal = ltZeroVal;
+        }
+        m_results.push_back(tmpVal);
+    }
     virtual void visit(AddNumericalExpressionNode &node)
     {
         node.getChild(0).accept(*this);
