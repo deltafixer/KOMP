@@ -1,0 +1,113 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Lex compile",
+            "command": "flex",
+            "args": [
+                "-o",
+                "${fileDirname}/${fileBasenameNoExtension}.l.cpp",
+                "${fileDirname}/${fileBasenameNoExtension}.l"
+            ],
+            "dependsOn": [
+                "Parser compile"
+            ]
+        },
+        {
+            "label": "Lex build",
+            "command": "g++",
+            "args": [
+                "-o",
+                "${fileDirname}/${fileBasenameNoExtension}.exe",
+                "${fileDirname}/${fileBasenameNoExtension}.l.cpp",
+                "-lfl"
+            ],
+            "dependsOn": [
+                "Lex compile"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Lex run",
+            "command": "${fileDirname}/${fileBasenameNoExtension}.exe",
+            "dependsOn": [
+                "Lex build"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Parser build",
+            "command": "g++",
+            "args": [
+                "-std=gnu++14",
+                "${fileDirname}/${fileBasenameNoExtension}.y.cpp",
+                "${fileDirname}/${fileBasenameNoExtension}.l.cpp",
+                "-lfl",
+                "-o",
+                "${fileDirname}/${fileBasenameNoExtension}.exe"
+            ],
+            "dependsOn": [
+                "Lex compile"
+            ],
+            "dependsOrder": "sequence"
+        },
+        {
+            "label": "Parser compile",
+            "command": "bison",
+            "args": [
+                "-d",
+                "${fileDirname}/${fileBasenameNoExtension}.y",
+                "-o",
+                "${fileDirname}/${fileBasenameNoExtension}.y.cpp"
+            ]
+        },
+        {
+            "label": "Parser run",
+            "command": "${fileDirname}/${fileBasenameNoExtension}.exe",
+            "dependsOn": [
+                "Parser build"
+            ]
+        },
+        {
+            "label": "Solo Lex compile",
+            "command": "flex",
+            "args": [
+                "-o",
+                "${fileDirname}/${fileBasenameNoExtension}.l.cpp",
+                "${fileDirname}/${fileBasenameNoExtension}.l"
+            ]
+        },
+        {
+            "label": "Solo Lex build",
+            "command": "g++",
+            "args": [
+                "-std=c++17",
+                "-o",
+                "${fileDirname}/${fileBasenameNoExtension}.exe",
+                "${fileDirname}/${fileBasenameNoExtension}.l.cpp",
+                "-lfl"
+            ],
+            "dependsOn": [
+                "Solo Lex compile"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Solo Lex run",
+            "command": "${fileDirname}/${fileBasenameNoExtension}.exe",
+            "dependsOn": [
+                "Solo Lex build"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Parser run",
+            "command": "${fileDirname}/${fileBasenameNoExtension}.exe",
+            "dependsOn": [
+                "Parser build"
+            ]
+        }
+    ]
+}

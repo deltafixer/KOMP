@@ -1,0 +1,10 @@
+a=1;
+b=1;
+i=0;
+while (i < 10) {
+    if (a-2*(a/2)==1) { print 1000; print a; } else { print 2000; print a; }
+    c = a+b;
+    a = b;
+    b= c;
+    i = i+1;
+}
