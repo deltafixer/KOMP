@@ -69,7 +69,7 @@ identifierChars [a-zA-Z0-9_]
 
 {identifierStart}{identifierChars}* { yylval.stringVal = yytext; RETURN (IDENTIFIER, "IDENTIFIER"); }
 
-[\0]                  { RETURN (END, "END"); }
+[\0]                {}
 
 .                   { RETURN (*yytext, "REST"); }
 
