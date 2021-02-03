@@ -8,7 +8,6 @@
 #include "compiler.y.hpp"
 
 extern void DBG(int, string);
-extern void DBG(int, char *);
 
 #define RETURN(val, debugMsg) DBG(val, debugMsg); return val;
 %}

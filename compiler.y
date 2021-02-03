@@ -8,7 +8,7 @@ ASTNode *root;
 unordered_map<string, int> varNameToID;
 
 extern int yylex(void);
-extern void yyerror(char*);
+extern void yyerror(string);
 extern int yylineno;
 extern FILE *yyin, *yyout;
 
@@ -19,14 +19,6 @@ void DBG(int id, string msg) {
     fprintf(stderr, "Line #%d, Rule #%d: %s\n", yylineno, id, msg.c_str());
     #endif
 }
-
-
-void DBG(int id, char *msg) {
-    #ifdef DEBUG
-    fprintf(stderr, "Line #%d, Rule #%d: %s\n", yylineno, id, msg);
-    #endif
-}
-
 
 %}
 
@@ -191,8 +183,8 @@ postFor:
 
 %%
 
-void yyerror(char *errMessage) {
-    fprintf(stderr, "Error in line %d: %s\n", yylineno, errMessage);
+void yyerror(string errMessage) {
+    fprintf(stderr, "Error in line %d: %s\n", yylineno, errMessage.c_str());
 }
 
 int testCase = 0;
