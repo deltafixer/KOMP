@@ -12,6 +12,13 @@ public:
     PseudoAssemblerVisitor(ostream &out = cout) : m_out(out), m_lastLabel(0) {}
     virtual ~PseudoAssemblerVisitor() {}
 
+    virtual void visit(DifferenceLogicalExpression &node)
+    {
+        node.getChild(0).accept(*this);
+        node.getChild(1).accept(*this);
+        m_out << "\tCMPEQ" << endl;
+        m_out << "\tNOT" << endl;
+    }
     virtual void visit(IncrIdentifierNode &node)
     {
         string lblIncr = nextLabel("INCR_");

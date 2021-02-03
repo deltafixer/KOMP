@@ -43,6 +43,7 @@ using namespace std;
 #include "GreaterLogicalExpression.hpp"
 #include "GreaterEqualLogicalExpression.hpp"
 #include "EqualLogicalExpression.hpp"
+#include "DifferenceLogicalExpression.hpp"
 #include "NegationLogicalExpressionNode.hpp"
 #include "RepeatUntilNode.hpp"
 #include "IncrIdentifierNode.hpp"

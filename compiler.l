@@ -50,9 +50,6 @@ identifierChars [a-zA-Z0-9_]
 "^"             { RETURN (XOR, "XOR"); }
 "!"             { RETURN (NOT, "NOT"); }
 
-"?"                { RETURN (QUESTION, "QUESTION"); }
-":"                { RETURN (COLUMN, "COLUMN"); }
-
 "="             { RETURN (ASSIGN, "ASSIGN"); }
 
 {digit}+        { yylval.intVal = atoi(yytext); RETURN (INTEGER, "INTEGER"); }

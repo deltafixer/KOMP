@@ -13,6 +13,16 @@ public:
     InterpreterVisitor() {}
     virtual ~InterpreterVisitor() {}
 
+    virtual void visit(DifferenceLogicalExpression &node)
+    {
+        node.getChild(0).accept(*this);
+        int lVal = m_results.back();
+        m_results.pop_back();
+        node.getChild(1).accept(*this);
+        int rVal = m_results.back();
+        m_results.pop_back();
+        m_results.push_back(lVal != rVal);
+    }
     virtual void visit(IncrIdentifierNode &node)
     {
         int old = m_idToValue[((IdentifierNode &)node.getChild(0)).id()]++;

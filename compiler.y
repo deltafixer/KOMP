@@ -33,7 +33,6 @@ void DBG(int id, string msg) {
 %token<floatVal> FLOAT
 %token<stringVal> IDENTIFIER
 
-%token QUESTION COLUMN
 %token LPAREN RPAREN LCURLY RCURLY SEMICOL COMMA
 %token ADD SUB OR MUL DIV AND XOR NOT INCR
 %token EQ GR GREQ LS LSEQ DIFF
@@ -42,12 +41,10 @@ void DBG(int id, string msg) {
 %precedence IFX
 %precedence ELSE
 
-%right COLUMN
-%right QUESTION
 %left ADD SUB OR XOR
 %left MUL DIV AND LS LSEQ GR GREQ
 %nonassoc NEG ASSIGN INCR
-%left EQ
+%left EQ DIFF
 
 %type<node> program statements statement statementBlock simpleStatement expressionStatement expression 
 %type<node> numericalExpression logicalExpression assignmentExpression preFor postFor 
@@ -161,6 +158,10 @@ logicalExpression:
             numericalExpression GREQ numericalExpression { $$ = new GreaterEqualLogicalExpression($1, $3); DBG(35, "logicalExpression->numericalExpression GREQ numericalExpression"); }
         |
             numericalExpression EQ numericalExpression { $$ = new EqualLogicalExpression($1, $3); DBG(35, "logicalExpression->numericalExpression EQ numericalExpression"); }
+        |   
+            numericalExpression DIFF numericalExpression { $$ = new DifferenceLogicalExpression($1, $3); DBG(35, "logicalExpression->numericalExpression DIFF numericalExpression"); }
+        |   
+            logicalExpression DIFF logicalExpression { $$ = new DifferenceLogicalExpression($1, $3); DBG(35, "logicalExpression->logicalExpression DIFF logicalExpression"); }
         ;
 
 assignmentExpression:
