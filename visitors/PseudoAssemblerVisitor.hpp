@@ -46,30 +46,6 @@ public:
         m_out << "\tJMPZERO " << lblRepeatBegin << endl;
         m_out << lblRepeatEnd << ":" << endl;
     }
-    virtual void visit(TripleQuestionNode &node)
-    {
-        string lblLt = nextLabel("QUESTION_LT_");
-        string lblEq = nextLabel("QUESTION_EQ_");
-        string lblEnd = nextLabel("QUESTION_END_");
-        node.getChild(0).accept(*this);
-        m_out << "\tPOP tmp" << endl;
-        m_out << "\tPUSH tmp" << endl;
-        m_out << "\tPUSH 0" << endl;
-        m_out << "\tCMPGE" << endl;
-        m_out << "\tJMPZERO " << lblLt << endl;
-        m_out << "\tPUSH tmp" << endl;
-        m_out << "\tPUSH 0" << endl;
-        m_out << "\tCMPEQ" << endl;
-        m_out << "\tJMPZERO " << lblEq << endl;
-        node.getChild(1).accept(*this);
-        m_out << "\tJMP " << lblEnd << endl;
-        m_out << lblLt << ":" << endl;
-        node.getChild(2).accept(*this);
-        m_out << "\tJMP " << lblEnd << endl;
-        m_out << lblEq << ":" << endl;
-        node.getChild(3).accept(*this);
-        m_out << lblEnd << ":" << endl;
-    }
     virtual void visit(AddNumericalExpressionNode &node)
     {
         node.getChild(0).accept(*this);

@@ -125,8 +125,6 @@ numericalExpression:
         |
             SUB numericalExpression %prec NEG { $$ = new NegNumericalExpressionNode($2); DBG(21, "numericalExpression->SUB numericalExpression %%prec NEG"); }
         |
-            numericalExpression QUESTION expression COLUMN expression COLUMN expression { $$ = new TripleQuestionNode($1, $3, $5, $7); }
-        |
             identifier { $$ = new IdentifierExpressionNode($1); DBG(22, "numericalExpression->identifier"); }
         |
             identifier INCR { $$ = new IncrIdentifierNode($1);  DBG(57, "identifier INCR"); }

@@ -37,36 +37,6 @@ public:
         }
         m_results.clear();
     }
-    virtual void visit(TripleQuestionNode &node)
-    {
-        node.getChild(0).accept(*this);
-        int subjectVal = m_results.back();
-        m_results.pop_back();
-        int tmpVal = 0;
-
-        if (subjectVal > 0)
-        {
-            node.getChild(1).accept(*this);
-            int gtZeroVal = m_results.back();
-            m_results.pop_back();
-            tmpVal = gtZeroVal;
-        }
-        else if (subjectVal)
-        {
-            node.getChild(2).accept(*this);
-            int eqZeroVal = m_results.back();
-            m_results.pop_back();
-            tmpVal = eqZeroVal;
-        }
-        else
-        {
-            node.getChild(3).accept(*this);
-            int ltZeroVal = m_results.back();
-            m_results.pop_back();
-            tmpVal = ltZeroVal;
-        }
-        m_results.push_back(tmpVal);
-    }
     virtual void visit(AddNumericalExpressionNode &node)
     {
         node.getChild(0).accept(*this);
