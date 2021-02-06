@@ -14,7 +14,10 @@ public:
     {
         return os;
     }
+    virtual ~Object() = 0;
 };
+
+inline Object::~Object() {}
 
 class Integer : public Object
 {
@@ -57,9 +60,13 @@ public:
     friend ostream &operator<<(ostream &os, Array const &v)
     {
         os << "[";
-        for (auto it = v.array.begin(); it != v.array.end(); ++it)
+        for (int i = 0; i < v.array.size(); ++i)
         {
-            os << *it << ", ";
+            os << v.array.at(i);
+            if (i != v.array.size() - 1)
+            {
+                os << ",";
+            }
         }
         os << "]";
         return os;
@@ -339,8 +346,17 @@ public:
     {
         node.getChild(0).accept(*this);
         Object *res = m_results.back();
-        cout << *res << endl;
-        fprintf(yyout, "%d\n", *res);
+        Array *arrayRes = dynamic_cast<Array *>(res);
+
+        if (arrayRes)
+        {
+            cout << *arrayRes << endl;
+        }
+        else
+        {
+            cout << *(Integer *)res << endl;
+        }
+        // fprintf(yyout, "%d\n", *res);
         m_results.pop_back();
     }
     virtual void visit(ProgramNode &node)

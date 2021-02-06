@@ -5,7 +5,13 @@
 class ArrayNode : public ASTNode
 {
 public:
-    ArrayNode(ASTNode *numericalExpressions) : ASTNode("ArrayNode") { pushChild(numericalExpressions); }
+    ArrayNode(ASTNode *expressions) : ASTNode("ArrayNode")
+    {
+        for (auto it = expressions->begin(); it != expressions->end(); ++it)
+        {
+            pushChild(*it);
+        }
+    }
     virtual ~ArrayNode() {}
 
     virtual void accept(ASTNodeVisitor &visitor) { visitor.visit(*this); }

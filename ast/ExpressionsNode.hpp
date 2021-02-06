@@ -5,15 +5,15 @@
 class ExpressionsNode : public ASTNode
 {
 public:
-    ExpressionsNode(ASTNode *numericalExpressions, ASTNode *numericalExpression) : ASTNode("ExpressionsNode")
+    ExpressionsNode(ASTNode *expressions, ASTNode *expression) : ASTNode("ExpressionsNode")
     {
-        for (auto it = numericalExpressions->begin(); it != numericalExpressions->end(); ++it)
+        for (auto it = expressions->begin(); it != expressions->end(); ++it)
         {
             pushChild(*it);
         }
-        pushChild(numericalExpression);
+        pushChild(expression);
     }
-    ExpressionsNode(ASTNode *numericalExpression) : ASTNode("ExpressionsNode") { pushChild(numericalExpression); }
+    ExpressionsNode(ASTNode *expression) : ASTNode("ExpressionsNode") { pushChild(expression); }
     virtual ~ExpressionsNode() {}
 
     virtual void accept(ASTNodeVisitor &visitor) { visitor.visit(*this); }
@@ -25,16 +25,16 @@ public:
         string subIndent = indent + indentShift;
         if (m_children.size() == 1)
         {
-            out << subIndent << "\"numericalExpression\": {" << endl;
+            out << subIndent << "\"expression\": {" << endl;
             m_children[0]->toStream(out, subIndent + indentShift);
             out << subIndent << "}" << endl;
         }
         if (m_children.size() == 2)
         {
-            out << subIndent << "\"numericalExpressions\": {" << endl;
+            out << subIndent << "\"expressions\": {" << endl;
             m_children[0]->toStream(out, subIndent + indentShift);
             out << subIndent << "}," << endl;
-            out << subIndent << "\"numericalExpression\": {" << endl;
+            out << subIndent << "\"expression\": {" << endl;
             m_children[1]->toStream(out, subIndent + indentShift);
             out << subIndent << "}" << endl;
         }
