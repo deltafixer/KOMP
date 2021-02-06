@@ -8,7 +8,7 @@
 
 using namespace std;
 
-#include "AddNumericalExpressionNode.hpp"
+#include "AddExpressionNode.hpp"
 #include "AndLogicalExpressionNode.hpp"
 #include "IdentifierNode.hpp"
 #include "ArrayNode.hpp"
@@ -18,7 +18,7 @@ using namespace std;
 #include "ASTNodeVisitor.hpp"
 #include "BinaryOperatorNode.hpp"
 #include "DifferenceLogicalExpression.hpp"
-#include "DivNumericalExpressionNode.hpp"
+#include "DivExpressionNode.hpp"
 #include "EmptyStatementNode.hpp"
 #include "EqualLogicalExpression.hpp"
 #include "ExpressionStatementNode.hpp"
@@ -34,7 +34,7 @@ using namespace std;
 #include "IntegerNode.hpp"
 #include "LessEqualLogicalExpression.hpp"
 #include "LessLogicalExpression.hpp"
-#include "MulNumericalExpressionNode.hpp"
+#include "MulExpressionNode.hpp"
 #include "NegationLogicalExpressionNode.hpp"
 #include "NegNumericalExpressionNode.hpp"
 #include "ExpressionsNode.hpp"
@@ -47,6 +47,6 @@ using namespace std;
 #include "StatementBlockNode.hpp"
 #include "StatementNode.hpp"
 #include "StatementsNode.hpp"
-#include "SubNumericalExpressionNode.hpp"
+#include "SubExpressionNode.hpp"
 #include "WhileNode.hpp"
 #include "XorLogicalExpressionNode.hpp"

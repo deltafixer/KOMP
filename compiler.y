@@ -120,13 +120,13 @@ arrayElementExpression:
         ;
 
 numericalExpression:
-            numericalExpression ADD numericalExpression { $$ = new AddNumericalExpressionNode($1, $3); DBG(18, "numericalExpression->numericalExpression ADD numericalExpression"); }
+            numericalExpression ADD numericalExpression { $$ = new AddExpressionNode($1, $3); DBG(18, "numericalExpression->numericalExpression ADD numericalExpression"); }
         |
-            numericalExpression SUB numericalExpression { $$ = new SubNumericalExpressionNode($1, $3); DBG(19, "numericalExpression->numericalExpression SUB numericalExpression"); }
+            numericalExpression SUB numericalExpression { $$ = new SubExpressionNode($1, $3); DBG(19, "numericalExpression->numericalExpression SUB numericalExpression"); }
         |
-            numericalExpression MUL numericalExpression { $$ = new MulNumericalExpressionNode($1, $3); DBG(20, "numericalExpression->numericalExpression MUL numericalExpression"); }
+            numericalExpression MUL numericalExpression { $$ = new MulExpressionNode($1, $3); DBG(20, "numericalExpression->numericalExpression MUL numericalExpression"); }
         |
-            numericalExpression DIV numericalExpression { $$ = new DivNumericalExpressionNode($1, $3); DBG(21, "numericalExpression->numericalExpression DIV numericalExpression"); }
+            numericalExpression DIV numericalExpression { $$ = new DivExpressionNode($1, $3); DBG(21, "numericalExpression->numericalExpression DIV numericalExpression"); }
         |
             LPAREN numericalExpression RPAREN { $$ = $2; DBG(22, "numericalExpression->LPAREN numericalExpression RPAREN"); }
         |
@@ -150,6 +150,14 @@ array:
         ;
 
 arrayExpression:
+            arrayExpression ADD arrayExpression { $$ = new AddExpressionNode($1, $3); DBG(18, "arrayExpression->arrayExpression ADD arrayExpression"); }
+        |
+            arrayExpression SUB arrayExpression { $$ = new SubExpressionNode($1, $3); DBG(19, "arrayExpression->arrayExpression SUB arrayExpression"); }
+        |
+            arrayExpression MUL arrayExpression { $$ = new MulExpressionNode($1, $3); DBG(20, "arrayExpression->arrayExpression MUL arrayExpression"); }
+        |
+            arrayExpression DIV arrayExpression { $$ = new DivExpressionNode($1, $3); DBG(21, "arrayExpression->arrayExpression DIV arrayExpression"); }
+        |
             LPAREN array RPAREN { $$ = $2; DBG(22, "arrayExpression->LPAREN array RPAREN"); }
         |
             array { $$ = $1; DBG(22, "arrayExpression->LPAREN array RPAREN"); }

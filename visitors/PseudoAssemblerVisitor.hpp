@@ -66,7 +66,7 @@ public:
         m_out << "\tJMPZERO " << lblRepeatBegin << endl;
         m_out << lblRepeatEnd << ":" << endl;
     }
-    virtual void visit(AddNumericalExpressionNode &node)
+    virtual void visit(AddExpressionNode &node)
     {
         node.getChild(0).accept(*this);
         node.getChild(1).accept(*this);
@@ -90,7 +90,7 @@ public:
             m_name2id[identifier] = m_name2id.size();
         m_out << "\tPOP ID#" << m_name2id[identifier] << endl;
     }
-    virtual void visit(DivNumericalExpressionNode &node)
+    virtual void visit(DivExpressionNode &node)
     {
         node.getChild(0).accept(*this);
         node.getChild(1).accept(*this);
@@ -151,7 +151,7 @@ public:
     {
         m_out << "\tPUSH " << (int)node.value() << endl;
     }
-    virtual void visit(MulNumericalExpressionNode &node)
+    virtual void visit(MulExpressionNode &node)
     {
         node.getChild(0).accept(*this);
         node.getChild(1).accept(*this);
@@ -207,7 +207,7 @@ public:
             return;
         node.getChild(1).accept(*this);
     }
-    virtual void visit(SubNumericalExpressionNode &node)
+    virtual void visit(SubExpressionNode &node)
     {
         node.getChild(0).accept(*this);
         node.getChild(1).accept(*this);

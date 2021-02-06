@@ -1,6 +1,6 @@
 #pragma once
 
-class AddNumericalExpressionNode;
+class AddExpressionNode;
 class AndLogicalExpressionNode;
 class IdentifierNode;
 class ArrayNode;
@@ -10,7 +10,7 @@ class ASTNode;
 class ASTNodeVisitor;
 class BinaryOperatorNode;
 class DifferenceLogicalExpression;
-class DivNumericalExpressionNode;
+class DivExpressionNode;
 class EmptyStatementNode;
 class EqualLogicalExpression;
 class ExpressionStatementNode;
@@ -26,7 +26,7 @@ class IncrIdentifierNode;
 class IntegerNode;
 class LessEqualLogicalExpression;
 class LessLogicalExpression;
-class MulNumericalExpressionNode;
+class MulExpressionNode;
 class NegationLogicalExpressionNode;
 class NegNumericalExpressionNode;
 class ExpressionsNode;
@@ -39,7 +39,7 @@ class RepeatUntilNode;
 class StatementBlockNode;
 class StatementNode;
 class StatementsNode;
-class SubNumericalExpressionNode;
+class SubExpressionNode;
 class WhileNode;
 class XorLogicalExpressionNode;
 
@@ -49,14 +49,14 @@ public:
     ASTNodeVisitor() {}
     virtual ~ASTNodeVisitor() {}
 
-    virtual void visit(AddNumericalExpressionNode &node) = 0;
+    virtual void visit(AddExpressionNode &node) = 0;
     virtual void visit(AndLogicalExpressionNode &node) = 0;
     virtual void visit(ArrayNode &node) = 0;
     virtual void visit(AssignmentExpressionNode &node) = 0;
     virtual void visit(AssignmentNode &node) = 0;
     virtual void visit(BinaryOperatorNode &node) = 0;
     virtual void visit(DifferenceLogicalExpression &node) = 0;
-    virtual void visit(DivNumericalExpressionNode &node) = 0;
+    virtual void visit(DivExpressionNode &node) = 0;
     virtual void visit(EmptyStatementNode &node) = 0;
     virtual void visit(EqualLogicalExpression &node) = 0;
     virtual void visit(ExpressionStatementNode &node) = 0;
@@ -73,7 +73,7 @@ public:
     virtual void visit(IntegerNode &node) = 0;
     virtual void visit(LessEqualLogicalExpression &node) = 0;
     virtual void visit(LessLogicalExpression &node) = 0;
-    virtual void visit(MulNumericalExpressionNode &node) = 0;
+    virtual void visit(MulExpressionNode &node) = 0;
     virtual void visit(NegationLogicalExpressionNode &node) = 0;
     virtual void visit(NegNumericalExpressionNode &node) = 0;
     virtual void visit(ExpressionsNode &node) = 0;
@@ -86,7 +86,7 @@ public:
     virtual void visit(StatementBlockNode &node) = 0;
     virtual void visit(StatementNode &node) = 0;
     virtual void visit(StatementsNode &node) = 0;
-    virtual void visit(SubNumericalExpressionNode &node) = 0;
+    virtual void visit(SubExpressionNode &node) = 0;
     virtual void visit(WhileNode &node) = 0;
     virtual void visit(XorLogicalExpressionNode &node) = 0;
 };
