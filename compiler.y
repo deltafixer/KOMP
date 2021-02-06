@@ -47,7 +47,7 @@ void DBG(int id, string msg) {
 %left EQ DIFF
 
 %type<node> program statements statement statementBlock simpleStatement expressionStatement expression 
-%type<node> numericalExpression logicalExpression assignmentExpression expressions preFor postFor arrayExpression
+%type<node> numericalExpression logicalExpression assignmentExpression expressions preFor postFor arrayExpression arrayElementExpression
 %type<node> identifier constant array
 
 %%
@@ -102,6 +102,8 @@ expressionStatement:
         |
             arrayExpression SEMICOL { $$ = new ExpressionStatementNode($1); DBG(666, "expressionStatement->arrayExpression SEMICOL"); }
         |
+            arrayElementExpression SEMICOL { $$ = new ExpressionStatementNode($1); DBG(666, "expressionStatement->arrayElementExpression SEMICOL"); }
+        |
             SEMICOL { $$ = new EmptyStatementNode(); DBG(15, "expressionStatement->SEMICOL"); }
         ;
 
@@ -109,6 +111,10 @@ expression:
             numericalExpression { $$ = $1; DBG(16, "expression->numericalExpression"); }
         |
             logicalExpression { $$ = $1; DBG(17, "expression->logicalExpression"); }
+        ;
+
+arrayElementExpression:
+            LPAREN identifier LSQUAREBR expression RSQUAREBR RPAREN { $$ = new IdentifierArrayNode($2, $4);; DBG(22, "arrayExpression->LPAREN array RPAREN"); }
         |
             identifier LSQUAREBR expression RSQUAREBR { $$ = new IdentifierArrayNode($1, $3);  DBG(27, "numericalExpression->identifier LSQUAREBR numericalExpression RSQUAREBR"); }
         ;
