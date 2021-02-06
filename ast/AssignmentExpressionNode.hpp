@@ -5,16 +5,21 @@
 class AssignmentExpressionNode : public ASTNode
 {
 public:
-    AssignmentExpressionNode(ASTNode *identifier, ASTNode *expression) : ASTNode("AssignmentExpressionNode")
+    AssignmentExpressionNode(ASTNode *identifier, ASTNode *expressionOrArray, ASTNode *expression = nullptr) : ASTNode("AssignmentExpressionNode")
     {
         pushChild(identifier);
-        pushChild(expression);
+        pushChild(expressionOrArray);
+        if (expression)
+        {
+            pushChild(expression);
+        }
     }
     virtual ~AssignmentExpressionNode() {}
 
     virtual void accept(ASTNodeVisitor &visitor) { visitor.visit(*this); }
     virtual void accept(ASTNodeVisitor &&visitor) { visitor.visit(*this); }
 
+    // TODO:
     virtual void toStream(ostream &out, string indent = "")
     {
         out << indent << "\"" << type() << "\": {" << endl;

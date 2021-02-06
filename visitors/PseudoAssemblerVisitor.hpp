@@ -12,6 +12,19 @@ public:
     PseudoAssemblerVisitor(ostream &out = cout) : m_out(out), m_lastLabel(0) {}
     virtual ~PseudoAssemblerVisitor() {}
 
+    virtual void visit(IdentifierArrayNode &node)
+    {
+    }
+    virtual void visit(ArrayNode &node)
+    {
+    }
+    virtual void visit(NumericalExpressionsNode &node)
+    {
+        node.getChild(0).accept(*this);
+        if (node.numChildren() == 1)
+            return;
+        node.getChild(1).accept(*this);
+    }
     virtual void visit(DifferenceLogicalExpression &node)
     {
         node.getChild(0).accept(*this);

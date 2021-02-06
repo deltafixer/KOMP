@@ -33,7 +33,7 @@ void DBG(int id, string msg) {
 %token<floatVal> FLOAT
 %token<stringVal> IDENTIFIER
 
-%token LPAREN RPAREN LCURLY RCURLY SEMICOL COMMA
+%token LPAREN RPAREN LCURLY RCURLY SEMICOL COMMA LSQUAREBR RSQUAREBR
 %token ADD SUB OR MUL DIV AND XOR NOT INCR
 %token EQ GR GREQ LS LSEQ DIFF
 %token IF ELSE FOR PRINT WHILE REPEAT UNTIL
@@ -47,8 +47,8 @@ void DBG(int id, string msg) {
 %left EQ DIFF
 
 %type<node> program statements statement statementBlock simpleStatement expressionStatement expression 
-%type<node> numericalExpression logicalExpression assignmentExpression preFor postFor 
-%type<node> identifier constant
+%type<node> numericalExpression logicalExpression assignmentExpression numericalExpressions preFor postFor 
+%type<node> identifier constant array
 
 %%
 
@@ -70,11 +70,11 @@ statements:
         ;
 
 statement:
-            statementBlock  { $$ = new StatementNode($1); DBG(3, "statement->statementBlock"); }
+            statementBlock { $$ = new StatementNode($1); DBG(3, "statement->statementBlock"); }
         |
             simpleStatement { $$ = new StatementNode($1); DBG(4, "statement->simpleStatement"); }
         |
-            expressionStatement { $$ = new StatementNode($1); DBG(58, "statement->expressionStatement"); }
+            expressionStatement { $$ = new StatementNode($1); DBG(5, "statement->expressionStatement"); }
         ;
 
 statementBlock:
@@ -82,102 +82,119 @@ statementBlock:
         ;
 
 simpleStatement:
-            PRINT expressionStatement  { $$ = new PrintNode($2); DBG(6, "simpleStatement->PRINT expressionStatement"); }
+            PRINT expressionStatement { $$ = new PrintNode($2); DBG(7, "simpleStatement->PRINT expressionStatement"); }
         |
-            IF LPAREN expression RPAREN statement  %prec IFX              { $$ = new IfNode($3, $5); DBG(7, "simpleStatement->IF expression statement  %prec IFX"); }
+            IF LPAREN expression RPAREN statement  %prec IFX { $$ = new IfNode($3, $5); DBG(8, "simpleStatement->IF expression statement  %prec IFX"); }
         |
-            IF LPAREN expression RPAREN statement ELSE statement { $$ = new IfElseNode($3, $5, $7); DBG(8, "simpleStatement->IF LPAREN expression RPAREN statement ELSE statement"); }
+            IF LPAREN expression RPAREN statement ELSE statement { $$ = new IfElseNode($3, $5, $7); DBG(9, "simpleStatement->IF LPAREN expression RPAREN statement ELSE statement"); }
         |
-            FOR LPAREN preFor SEMICOL expression SEMICOL postFor RPAREN statement { $$ = new ForNode($3, $5, $7, $9); DBG(9, "simpleStatement->IF LPAREN expression RPAREN statement ELSE statement"); }
+            FOR LPAREN preFor SEMICOL expression SEMICOL postFor RPAREN statement { $$ = new ForNode($3, $5, $7, $9); DBG(10, "simpleStatement->IF LPAREN expression RPAREN statement ELSE statement"); }
         |
-            WHILE LPAREN expression RPAREN statement { $$ = new WhileNode($3, $5); DBG(10, "simpleStatement->WHILE LPAREN expression RPAREN statement"); }
+            WHILE LPAREN expression RPAREN statement { $$ = new WhileNode($3, $5); DBG(11, "simpleStatement->WHILE LPAREN expression RPAREN statement"); }
         |
-            REPEAT statement UNTIL logicalExpression SEMICOL { $$ = new RepeatUntilNode($2, $4); DBG(56, "simpleStatement->REPEAT statementBlock UNTIL expression SEMICOL"); }
+            REPEAT statement UNTIL logicalExpression SEMICOL { $$ = new RepeatUntilNode($2, $4); DBG(12, "simpleStatement->REPEAT statementBlock UNTIL expression SEMICOL"); }
         |
-            assignmentExpression SEMICOL { $$ = new AssignmentNode($1); DBG(11, "simpleStatement->assignmentExpression"); }   
+            assignmentExpression SEMICOL { $$ = new AssignmentNode($1); DBG(13, "simpleStatement->assignmentExpression SEMICOL"); }   
         ;
 
 expressionStatement:
-            expression SEMICOL  { $$ = new ExpressionStatementNode($1); DBG(12, "expressionStatement->expression SEMICOL"); }
+            expression SEMICOL { $$ = new ExpressionStatementNode($1); DBG(14, "expressionStatement->expression SEMICOL"); }
         |
-            SEMICOL             { $$ = new EmptyStatementNode(); DBG(13, "expressionStatement->SEMICOL"); }
+            SEMICOL { $$ = new EmptyStatementNode(); DBG(15, "expressionStatement->SEMICOL"); }
         ;
 
 expression:
-            numericalExpression { $$ = $1; DBG(14, "expression->numericalExpression"); }
+            numericalExpression { $$ = $1; DBG(16, "expression->numericalExpression"); }
         |
-            logicalExpression { $$ = $1; DBG(15, "expression->logicalExpression"); }
+            logicalExpression { $$ = $1; DBG(17, "expression->logicalExpression"); }
         ;
 
 numericalExpression:
-            numericalExpression ADD numericalExpression { $$ = new AddNumericalExpressionNode($1, $3); DBG(16, "numericalExpression->numericalExpression ADD numericalExpression"); }
+            numericalExpression ADD numericalExpression { $$ = new AddNumericalExpressionNode($1, $3); DBG(18, "numericalExpression->numericalExpression ADD numericalExpression"); }
         |
-            numericalExpression SUB numericalExpression { $$ = new SubNumericalExpressionNode($1, $3); DBG(17, "numericalExpression->numericalExpression SUB numericalExpression"); }
+            numericalExpression SUB numericalExpression { $$ = new SubNumericalExpressionNode($1, $3); DBG(19, "numericalExpression->numericalExpression SUB numericalExpression"); }
         |
-            numericalExpression MUL numericalExpression { $$ = new MulNumericalExpressionNode($1, $3); DBG(18, "numericalExpression->numericalExpression MUL numericalExpression"); }
+            numericalExpression MUL numericalExpression { $$ = new MulNumericalExpressionNode($1, $3); DBG(20, "numericalExpression->numericalExpression MUL numericalExpression"); }
         |
-            numericalExpression DIV numericalExpression { $$ = new DivNumericalExpressionNode($1, $3); DBG(19, "numericalExpression->numericalExpression DIV numericalExpression"); }
+            numericalExpression DIV numericalExpression { $$ = new DivNumericalExpressionNode($1, $3); DBG(21, "numericalExpression->numericalExpression DIV numericalExpression"); }
         |
-            LPAREN numericalExpression RPAREN { $$ = $2; DBG(20, "numericalExpression->LPAREN numericalExpression RPAREN"); }
+            LPAREN numericalExpression RPAREN { $$ = $2; DBG(22, "numericalExpression->LPAREN numericalExpression RPAREN"); }
         |
-            SUB numericalExpression %prec NEG { $$ = new NegNumericalExpressionNode($2); DBG(21, "numericalExpression->SUB numericalExpression %%prec NEG"); }
+            SUB numericalExpression %prec NEG { $$ = new NegNumericalExpressionNode($2); DBG(23, "numericalExpression->SUB numericalExpression %%prec NEG"); }
         |
-            identifier { $$ = new IdentifierExpressionNode($1); DBG(22, "numericalExpression->identifier"); }
+            identifier { $$ = new IdentifierExpressionNode($1); DBG(24, "numericalExpression->identifier"); }
         |
-            identifier INCR { $$ = new IncrIdentifierNode($1);  DBG(57, "identifier INCR"); }
+            identifier INCR { $$ = new IncrIdentifierNode($1);  DBG(25, "numericalExpression->identifier INCR"); }
         |
-            constant { $$ = $1;  DBG(37, "numericalExpression->identifier");  }
+            constant { $$ = $1; DBG(26, "numericalExpression->constant");  }
+        |
+            identifier LSQUAREBR numericalExpression RSQUAREBR { $$ = new IdentifierArrayNode($1, $3);  DBG(27, "numericalExpression->identifier LSQUAREBR numericalExpression RSQUAREBR"); }
+        ;
+
+numericalExpressions:
+            numericalExpressions COMMA numericalExpression { $$ = new NumericalExpressionsNode($1, $3); DBG(28, "numericalExpressions->numericalExpression COMMA numericalExpression"); }
+        |
+            numericalExpression { $$ = new NumericalExpressionsNode($1); DBG(29, "numericalExpressions->numericalExpression"); }
+        ;
+            
+array: 
+            LSQUAREBR numericalExpressions RSQUAREBR { $$ = new ArrayNode($2); DBG(30, "numericalExpressions->LSQUAREBR numericalExpressions RSQUAREBR"); }
         ;
 
 identifier: 
-            IDENTIFIER { $$ = new IdentifierNode($1); DBG(36, "identifier->IDENTIFIER"); }
+            IDENTIFIER { $$ = new IdentifierNode($1); DBG(31, "identifier->IDENTIFIER"); }
         ;
 
-constant:   INTEGER { $$ = new IntegerNode($1); DBG(23, "numericalExpression->INTEGER"); }
+constant:   
+            INTEGER { $$ = new IntegerNode($1); DBG(32, "numericalExpression->INTEGER"); }
         |
-            FLOAT { $$ = new FloatNode($1); DBG(24, "numericalExpression->FLOAT"); }
+            FLOAT { $$ = new FloatNode($1); DBG(33, "numericalExpression->FLOAT"); }
         ;
 
 logicalExpression:
-            logicalExpression AND logicalExpression { $$ = new AndLogicalExpressionNode($1, $3); DBG(25, "a->b"); }
+            logicalExpression AND logicalExpression { $$ = new AndLogicalExpressionNode($1, $3); DBG(34, "logicalExpression->logicalExpression AND logicalExpression"); }
         |
-            logicalExpression OR logicalExpression { $$ = new OrLogicalExpressionNode($1, $3);DBG(26, "a->b");}
+            logicalExpression OR logicalExpression { $$ = new OrLogicalExpressionNode($1, $3);DBG(35, "logicalExpression->logicalExpression OR logicalExpression");}
         |
-            logicalExpression XOR logicalExpression { $$ = new XorLogicalExpressionNode($1, $3);DBG(27, "a->b"); }
+            logicalExpression XOR logicalExpression { $$ = new XorLogicalExpressionNode($1, $3);DBG(36, "logicalExpression->logicalExpression XOR logicalExpression"); }
         |
-            NOT logicalExpression %prec NEG { $$ = new NegationLogicalExpressionNode($2); DBG(28, "a->b"); }
+            NOT logicalExpression %prec NEG { $$ = new NegationLogicalExpressionNode($2); DBG(37, "logicalExpression->NOT logicalExpression %prec NEG"); }
         |
-            LPAREN logicalExpression RPAREN { $$ = $2; DBG(29, "a->b"); }
+            LPAREN logicalExpression RPAREN { $$ = $2; DBG(38, "logicalExpression->LPAREN logicalExpression RPAREN"); }
         |
-            numericalExpression LS numericalExpression { $$ = new LessLogicalExpression($1, $3); DBG(35, "logicalExpression->numericalExpression LS numericalExpression"); }
+            numericalExpression LS numericalExpression { $$ = new LessLogicalExpression($1, $3); DBG(39, "logicalExpression->numericalExpression LS numericalExpression"); }
         |
-            numericalExpression LSEQ numericalExpression { $$ = new LessEqualLogicalExpression($1, $3); DBG(35, "logicalExpression->numericalExpression LSEQ numericalExpression"); }
+            numericalExpression LSEQ numericalExpression { $$ = new LessEqualLogicalExpression($1, $3); DBG(40, "logicalExpression->numericalExpression LSEQ numericalExpression"); }
         |
-            numericalExpression GR numericalExpression { $$ = new GreaterLogicalExpression($1, $3); DBG(35, "logicalExpression->numericalExpression GR numericalExpression"); }
+            numericalExpression GR numericalExpression { $$ = new GreaterLogicalExpression($1, $3); DBG(41, "logicalExpression->numericalExpression GR numericalExpression"); }
         |
-            numericalExpression GREQ numericalExpression { $$ = new GreaterEqualLogicalExpression($1, $3); DBG(35, "logicalExpression->numericalExpression GREQ numericalExpression"); }
+            numericalExpression GREQ numericalExpression { $$ = new GreaterEqualLogicalExpression($1, $3); DBG(42, "logicalExpression->numericalExpression GREQ numericalExpression"); }
         |
-            numericalExpression EQ numericalExpression { $$ = new EqualLogicalExpression($1, $3); DBG(35, "logicalExpression->numericalExpression EQ numericalExpression"); }
+            numericalExpression EQ numericalExpression { $$ = new EqualLogicalExpression($1, $3); DBG(43, "logicalExpression->numericalExpression EQ numericalExpression"); }
         |   
-            numericalExpression DIFF numericalExpression { $$ = new DifferenceLogicalExpression($1, $3); DBG(35, "logicalExpression->numericalExpression DIFF numericalExpression"); }
+            numericalExpression DIFF numericalExpression { $$ = new DifferenceLogicalExpression($1, $3); DBG(44, "logicalExpression->numericalExpression DIFF numericalExpression"); }
         |   
-            logicalExpression DIFF logicalExpression { $$ = new DifferenceLogicalExpression($1, $3); DBG(35, "logicalExpression->logicalExpression DIFF logicalExpression"); }
+            logicalExpression DIFF logicalExpression { $$ = new DifferenceLogicalExpression($1, $3); DBG(45, "logicalExpression->logicalExpression DIFF logicalExpression"); }
         ;
 
 assignmentExpression:
-            identifier ASSIGN expression { $$ = new AssignmentExpressionNode($1, $3); DBG(30, "assignmentExpression->identifier ASSIGN expression"); }
+            identifier ASSIGN expression { $$ = new AssignmentExpressionNode($1, $3); DBG(46, "assignmentExpression->identifier ASSIGN expression"); }
+        |
+            identifier LSQUAREBR expression RSQUAREBR ASSIGN expression { $$ = new AssignmentExpressionNode($1, $3, $6); DBG(47, "assignmentExpression->identifier LSQUAREBR expression RSQUAREBR ASSIGN expression"); }
+        |
+            identifier ASSIGN array { $$ = new AssignmentExpressionNode($1, $3); DBG(48, "assignmentExpression->identifier ASSIGN array"); }
         ;
 
 preFor:
-            assignmentExpression   { $$ = new PreFor($1); DBG(31, "preFor->assignmentExpression"); }
+            assignmentExpression   { $$ = new PreFor($1); DBG(49, "preFor->assignmentExpression"); }
         ;
 
 postFor:
-            assignmentExpression  { $$ = new PostFor($1); DBG(32, "postFor->assignmentExpression"); }
+            assignmentExpression  { $$ = new PostFor($1); DBG(50, "postFor->assignmentExpression"); }
         |
-            postFor COMMA assignmentExpression  { $$ = new PostFor($1, $3); DBG(33, "postFor->postFor COMMA assignmentExpression"); }
+            postFor COMMA assignmentExpression  { $$ = new PostFor($1, $3); DBG(51, "postFor->postFor COMMA assignmentExpression"); }
         |
-            %empty  { new PostFor(); DBG(34, "postFor->%empty"); }
+            %empty  { new PostFor(); DBG(52, "postFor->%empty"); }
         ;
 
 %%
