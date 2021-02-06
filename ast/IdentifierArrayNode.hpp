@@ -5,7 +5,11 @@
 class IdentifierArrayNode : public ASTNode
 {
 public:
-    IdentifierArrayNode(ASTNode *identifier, ASTNode *array) : ASTNode("IdentifierArrayNode") { pushChild(identifier); }
+    IdentifierArrayNode(ASTNode *identifier, ASTNode *array) : ASTNode("IdentifierArrayNode")
+    {
+        pushChild(identifier);
+        pushChild(array);
+    }
     virtual ~IdentifierArrayNode() {}
 
     virtual void accept(ASTNodeVisitor &visitor) { visitor.visit(*this); }
