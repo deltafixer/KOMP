@@ -2,16 +2,19 @@
 
 #include "ASTNode.hpp"
 
-class NumericalExpressionsNode : public ASTNode
+class ExpressionsNode : public ASTNode
 {
 public:
-    NumericalExpressionsNode(ASTNode *numericalExpressions, ASTNode *numericalExpression) : ASTNode("NumericalExpressionsNode")
+    ExpressionsNode(ASTNode *numericalExpressions, ASTNode *numericalExpression) : ASTNode("ExpressionsNode")
     {
-        pushChild(numericalExpressions);
+        for (auto it = numericalExpressions->begin(); it != numericalExpressions->end(); ++it)
+        {
+            pushChild(*it);
+        }
         pushChild(numericalExpression);
     }
-    NumericalExpressionsNode(ASTNode *numericalExpression) : ASTNode("NumericalExpressionsNode") { pushChild(numericalExpression); }
-    virtual ~NumericalExpressionsNode() {}
+    ExpressionsNode(ASTNode *numericalExpression) : ASTNode("ExpressionsNode") { pushChild(numericalExpression); }
+    virtual ~ExpressionsNode() {}
 
     virtual void accept(ASTNodeVisitor &visitor) { visitor.visit(*this); }
     virtual void accept(ASTNodeVisitor &&visitor) { visitor.visit(*this); }

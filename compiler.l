@@ -30,8 +30,8 @@ identifierChars [a-zA-Z0-9_]
 "}"             { RETURN (RCURLY, "RCURLY"); }
 "("             { RETURN (LPAREN, "LPAREN"); }
 ")"             { RETURN (RPAREN, "RPAREN"); }
-"["             { RETURN (RPAREN, "LSQUAREBR"); }
-"]"             { RETURN (RPAREN, "RSQUAREBR"); }
+"["             { RETURN (LSQUAREBR, "LSQUAREBR"); }
+"]"             { RETURN (RSQUAREBR, "RSQUAREBR"); }
 
 "++"             { RETURN (INCR, "INCR"); }
 

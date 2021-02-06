@@ -47,7 +47,7 @@ void DBG(int id, string msg) {
 %left EQ DIFF
 
 %type<node> program statements statement statementBlock simpleStatement expressionStatement expression 
-%type<node> numericalExpression logicalExpression assignmentExpression numericalExpressions preFor postFor 
+%type<node> numericalExpression logicalExpression assignmentExpression expressions preFor postFor arrayExpression
 %type<node> identifier constant array
 
 %%
@@ -56,7 +56,7 @@ program:
             statements {
                 root = new ProgramNode($1);
                 root->accept(InterpreterVisitor());
-                root->accept(PseudoAssemblerVisitor());
+                // root->accept(PseudoAssemblerVisitor());
                 //cout << "PRINTING ROOT:" << endl;
                 //root->toStream(cout);
                 DBG(1, "program->statements"); 
@@ -83,7 +83,7 @@ statementBlock:
 
 simpleStatement:
             PRINT expressionStatement { $$ = new PrintNode($2); DBG(7, "simpleStatement->PRINT expressionStatement"); }
-        |
+        |   
             IF LPAREN expression RPAREN statement  %prec IFX { $$ = new IfNode($3, $5); DBG(8, "simpleStatement->IF expression statement  %prec IFX"); }
         |
             IF LPAREN expression RPAREN statement ELSE statement { $$ = new IfElseNode($3, $5, $7); DBG(9, "simpleStatement->IF LPAREN expression RPAREN statement ELSE statement"); }
@@ -100,6 +100,8 @@ simpleStatement:
 expressionStatement:
             expression SEMICOL { $$ = new ExpressionStatementNode($1); DBG(14, "expressionStatement->expression SEMICOL"); }
         |
+            arrayExpression SEMICOL { $$ = new ExpressionStatementNode($1); DBG(666, "expressionStatement->arrayExpression SEMICOL"); }
+        |
             SEMICOL { $$ = new EmptyStatementNode(); DBG(15, "expressionStatement->SEMICOL"); }
         ;
 
@@ -107,6 +109,8 @@ expression:
             numericalExpression { $$ = $1; DBG(16, "expression->numericalExpression"); }
         |
             logicalExpression { $$ = $1; DBG(17, "expression->logicalExpression"); }
+        |
+            identifier LSQUAREBR expression RSQUAREBR { $$ = new IdentifierArrayNode($1, $3);  DBG(27, "numericalExpression->identifier LSQUAREBR numericalExpression RSQUAREBR"); }
         ;
 
 numericalExpression:
@@ -127,20 +131,23 @@ numericalExpression:
             identifier INCR { $$ = new IncrIdentifierNode($1);  DBG(25, "numericalExpression->identifier INCR"); }
         |
             constant { $$ = $1; DBG(26, "numericalExpression->constant");  }
-        |
-            identifier LSQUAREBR numericalExpression RSQUAREBR { $$ = new IdentifierArrayNode($1, $3);  DBG(27, "numericalExpression->identifier LSQUAREBR numericalExpression RSQUAREBR"); }
         ;
 
-numericalExpressions:
-            numericalExpressions COMMA numericalExpression { $$ = new NumericalExpressionsNode($1, $3); DBG(28, "numericalExpressions->numericalExpression COMMA numericalExpression"); }
+expressions:
+            expressions COMMA expression { $$ = new ExpressionsNode($1, $3); DBG(28, "expressions->expression COMMA expression"); }
         |
-            numericalExpression { $$ = new NumericalExpressionsNode($1); DBG(29, "numericalExpressions->numericalExpression"); }
+            expression { $$ = new ExpressionsNode($1); DBG(29, "expressions->expression"); }
         ;
             
 array: 
-            LSQUAREBR numericalExpressions RSQUAREBR { $$ = new ArrayNode($2); DBG(30, "numericalExpressions->LSQUAREBR numericalExpressions RSQUAREBR"); }
+            LSQUAREBR expressions RSQUAREBR { $$ = new ArrayNode($2); DBG(30, "expressions->LSQUAREBR expressions RSQUAREBR"); }
         ;
 
+arrayExpression:
+            LPAREN array RPAREN { $$ = $2; DBG(22, "arrayExpression->LPAREN array RPAREN"); }
+        |
+            array { $$ = $1; DBG(22, "arrayExpression->LPAREN array RPAREN"); }
+        ;
 identifier: 
             IDENTIFIER { $$ = new IdentifierNode($1); DBG(31, "identifier->IDENTIFIER"); }
         ;
@@ -180,9 +187,9 @@ logicalExpression:
 assignmentExpression:
             identifier ASSIGN expression { $$ = new AssignmentExpressionNode($1, $3); DBG(46, "assignmentExpression->identifier ASSIGN expression"); }
         |
-            identifier LSQUAREBR expression RSQUAREBR ASSIGN expression { $$ = new AssignmentExpressionNode($1, $3, $6); DBG(47, "assignmentExpression->identifier LSQUAREBR expression RSQUAREBR ASSIGN expression"); }
+            identifier ASSIGN array { $$ = new AssignmentExpressionNode($1, $3); DBG(46, "assignmentExpression->identifier ASSIGN expression"); }
         |
-            identifier ASSIGN array { $$ = new AssignmentExpressionNode($1, $3); DBG(48, "assignmentExpression->identifier ASSIGN array"); }
+            identifier LSQUAREBR expression RSQUAREBR ASSIGN expression { $$ = new AssignmentExpressionNode($1, $3, $6); DBG(47, "assignmentExpression->identifier LSQUAREBR expression RSQUAREBR ASSIGN expression"); }
         ;
 
 preFor:
@@ -214,7 +221,7 @@ int compare(const char *checkFile, const char *resFile) {
         char chCheck = fgetc(fCheck);
         if (feof(fRes)) { fprintf(stderr, "res file EOF"); return 4; }
         char chRes = fgetc(fRes);
-        if (chRes != chCheck) { fprintf(stderr, "check file is different than res"); return 5; }
+        if (chRes != chCheck) { fprintf(stderr, "check file is different than res "); return 5; }
     }
     fclose(fCheck);
     fclose(fRes);

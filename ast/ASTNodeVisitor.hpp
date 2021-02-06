@@ -29,7 +29,7 @@ class LessLogicalExpression;
 class MulNumericalExpressionNode;
 class NegationLogicalExpressionNode;
 class NegNumericalExpressionNode;
-class NumericalExpressionsNode;
+class ExpressionsNode;
 class OrLogicalExpressionNode;
 class PostFor;
 class PreFor;
@@ -76,7 +76,7 @@ public:
     virtual void visit(MulNumericalExpressionNode &node) = 0;
     virtual void visit(NegationLogicalExpressionNode &node) = 0;
     virtual void visit(NegNumericalExpressionNode &node) = 0;
-    virtual void visit(NumericalExpressionsNode &node) = 0;
+    virtual void visit(ExpressionsNode &node) = 0;
     virtual void visit(OrLogicalExpressionNode &node) = 0;
     virtual void visit(PostFor &node) = 0;
     virtual void visit(PreFor &node) = 0;

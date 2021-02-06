@@ -18,7 +18,7 @@ public:
     virtual void visit(ArrayNode &node)
     {
     }
-    virtual void visit(NumericalExpressionsNode &node)
+    virtual void visit(ExpressionsNode &node)
     {
         node.getChild(0).accept(*this);
         if (node.numChildren() == 1)
