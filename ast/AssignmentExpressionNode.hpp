@@ -5,10 +5,14 @@
 class AssignmentExpressionNode : public ASTNode
 {
 public:
-    AssignmentExpressionNode(ASTNode *identifier, ASTNode *expression) : ASTNode("AssignmentExpressionNode")
+    AssignmentExpressionNode(ASTNode *identifier, ASTNode *expression, ASTNode *expressionSecond = nullptr) : ASTNode("AssignmentExpressionNode")
     {
         pushChild(identifier);
         pushChild(expression);
+        if (expressionSecond)
+        {
+            pushChild(expressionSecond);
+        }
     }
     virtual ~AssignmentExpressionNode() {}
 
@@ -26,6 +30,13 @@ public:
         m_children[1]->toStream(out, subIndent + indentShift);
         out << subIndent << "}" << endl;
         out << indent << "}" << endl;
+        if (m_children.size() == 3)
+        {
+            out << subIndent << "\"expression\": {" << endl;
+            m_children[2]->toStream(out, subIndent + indentShift);
+            out << subIndent << "}" << endl;
+            out << indent << "}" << endl;
+        }
     }
 
 protected:

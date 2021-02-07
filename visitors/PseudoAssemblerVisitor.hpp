@@ -12,48 +12,7 @@ public:
     PseudoAssemblerVisitor(ostream &out = cout) : m_out(out), m_lastLabel(0) {}
     virtual ~PseudoAssemblerVisitor() {}
 
-    virtual void visit(DifferenceLogicalExpression &node)
-    {
-        node.getChild(0).accept(*this);
-        node.getChild(1).accept(*this);
-        m_out << "\tCMPEQ" << endl;
-        m_out << "\tNOT" << endl;
-    }
-    virtual void visit(IncrIdentifierNode &node)
-    {
-        string lblIncr = nextLabel("INCR_");
-
-        string identifier = ((IdentifierNode &)node.getChild(0)).id();
-        if (m_name2id.count(identifier) == 0)
-            m_name2id[identifier] = m_name2id.size();
-
-        m_out << lblIncr << ":" << endl;
-        m_out << "\tPUSH ID#" << m_name2id[identifier] << endl;
-        m_out << "\tPOP tmp" << endl;
-
-        m_out << "\tPUSH tmp" << endl;
-        m_out << "\tPUSH 1" << endl;
-        m_out << "\tADD" << endl;
-
-        m_out << "\tPOP ID#" << m_name2id[identifier] << endl;
-        m_out << "\tPUSH tmp" << endl;
-    }
-    virtual void visit(RepeatUntilNode &node)
-    {
-        string lblRepeatBegin = nextLabel("REPEAT_BEGIN_");
-        string lblRepeatEnd = nextLabel("REPEAT_END_");
-
-        m_out << lblRepeatBegin << ":" << endl;
-        node.getChild(0).accept(*this);
-
-        node.getChild(1).accept(*this);
-        m_out << "\tPUSH 0" << endl;
-        m_out << "\tCMPEQ" << endl;
-        m_out << "\tNOT" << endl;
-        m_out << "\tJMPZERO " << lblRepeatBegin << endl;
-        m_out << lblRepeatEnd << ":" << endl;
-    }
-    virtual void visit(AddNumericalExpressionNode &node)
+    virtual void visit(AddExpressionNode &node)
     {
         node.getChild(0).accept(*this);
         node.getChild(1).accept(*this);
@@ -65,25 +24,71 @@ public:
         node.getChild(1).accept(*this);
         m_out << "\tAND" << endl;
     }
+    virtual void visit(ArrayNode &node)
+    {
+    }
+    virtual void visit(AssignmentExpressionNode &node)
+    {
+        // this case is: identifier LSQUAREBR numericalExpression RSQUAREBR ASSIGN numericalExpression
+        if (node.numChildren() == 3)
+        {
+            string identifier = ((IdentifierNode &)node.getChild(0)).id();
+
+            node.getChild(1).accept(*this);
+            m_out << "\tPOP INDEX" << endl;
+            node.getChild(2).accept(*this);
+            m_out << "\tPOP VALUE" << endl;
+
+            m_out << "\tPUSH" << m_name2id[identifier] << endl;
+            m_out << "\tPUSH INDEX" << endl;
+            // imagine if m_name2id[identifier] is a pointer to the beginning of the array, adding to it, moves the pointer
+            m_out << "\tADD " << endl;
+            m_out << "\tPUSH VALUE" << endl;
+            // at given position of array, replace value with new value
+            m_out << "\tREPLACE " << endl;
+        }
+        // this case is: identifier ASSIGN array | identifier ASSIGN expression
+        else
+        {
+            string id = ((IdentifierNode &)node.getChild(0)).id();
+            node.getChild(1).accept(*this);
+            m_out << "\tPOP ID#" << m_name2id[id] << endl;
+        }
+    }
     virtual void visit(AssignmentNode &node)
     {
         node.getChild(0).accept(*this);
     }
-    virtual void visit(AssignmentExpressionNode &node)
+    virtual void visit(BinaryOperatorNode &node)
     {
-        node.getChild(1).accept(*this);
-        string identifier = ((IdentifierNode &)node.getChild(0)).id();
-        if (m_name2id.count(identifier) == 0)
-            m_name2id[identifier] = m_name2id.size();
-        m_out << "\tPOP ID#" << m_name2id[identifier] << endl;
     }
-    virtual void visit(DivNumericalExpressionNode &node)
+    virtual void visit(DifferenceLogicalExpression &node)
+    {
+        node.getChild(0).accept(*this);
+        node.getChild(1).accept(*this);
+        m_out << "\tCMPEQ" << endl;
+        m_out << "\tNOT" << endl;
+    }
+    virtual void visit(DivExpressionNode &node)
     {
         node.getChild(0).accept(*this);
         node.getChild(1).accept(*this);
         m_out << "\tDIV" << endl;
     }
     virtual void visit(EmptyStatementNode &node) {}
+    virtual void visit(EqualLogicalExpression &node)
+    {
+        node.getChild(0).accept(*this);
+        node.getChild(1).accept(*this);
+        m_out << "\tCMPEQ" << endl;
+    }
+    virtual void visit(ExpressionsNode &node)
+    {
+        node.getChild(0).accept(*this);
+        if (node.numChildren() == 1)
+            return;
+        node.getChild(1).accept(*this);
+    }
     virtual void visit(ExpressionStatementNode &node)
     {
         node.getChild(0).accept(*this);
@@ -104,6 +109,30 @@ public:
         node.getChild(2).accept(*this);
         m_out << "\tJMP " << lblCond << endl;
         m_out << lblEnd << ":" << endl;
+    }
+    virtual void visit(GreaterEqualLogicalExpression &node)
+    {
+        node.getChild(0).accept(*this);
+        node.getChild(1).accept(*this);
+        m_out << "\tCMPGE" << endl;
+    }
+    virtual void visit(GreaterLogicalExpression &node)
+    {
+        node.getChild(0).accept(*this);
+        node.getChild(1).accept(*this);
+        m_out << "\tCMPGT" << endl;
+    }
+    virtual void visit(IdentifierArrayNode &node)
+    {
+        string identifier = ((IdentifierNode &)node.getChild(0)).id();
+
+        node.getChild(1).accept(*this);
+        m_out << "\tPOP INDEX" << endl;
+
+        m_out << "\tPUSH" << m_name2id[identifier] << endl;
+        m_out << "\tPUSH INDEX" << endl;
+        m_out << "\tADD " << endl;
+        // now pointing at: m_name2id[identifier].begin() + index
     }
     virtual void visit(IdentifierExpressionNode &node)
     {
@@ -134,15 +163,51 @@ public:
         m_out << "\tJMP " << lblEnd << endl;
         m_out << lblEnd << ":" << endl;
     }
+    virtual void visit(IncrIdentifierNode &node)
+    {
+        string lblIncr = nextLabel("INCR_");
+
+        string identifier = ((IdentifierNode &)node.getChild(0)).id();
+        if (m_name2id.count(identifier) == 0)
+            m_name2id[identifier] = m_name2id.size();
+
+        m_out << lblIncr << ":" << endl;
+        m_out << "\tPUSH ID#" << m_name2id[identifier] << endl;
+        m_out << "\tPOP tmp" << endl;
+
+        m_out << "\tPUSH tmp" << endl;
+        m_out << "\tPUSH 1" << endl;
+        m_out << "\tADD" << endl;
+
+        m_out << "\tPOP ID#" << m_name2id[identifier] << endl;
+        m_out << "\tPUSH tmp" << endl;
+    }
     virtual void visit(IntegerNode &node)
     {
         m_out << "\tPUSH " << (int)node.value() << endl;
     }
-    virtual void visit(MulNumericalExpressionNode &node)
+    virtual void visit(LessEqualLogicalExpression &node)
+    {
+        node.getChild(0).accept(*this);
+        node.getChild(1).accept(*this);
+        m_out << "\tCMPLE" << endl;
+    }
+    virtual void visit(LessLogicalExpression &node)
+    {
+        node.getChild(0).accept(*this);
+        node.getChild(1).accept(*this);
+        m_out << "\tCMPLT" << endl;
+    }
+    virtual void visit(MulExpressionNode &node)
     {
         node.getChild(0).accept(*this);
         node.getChild(1).accept(*this);
         m_out << "\tMUL" << endl;
+    }
+    virtual void visit(NegationLogicalExpressionNode &node)
+    {
+        node.getChild(0).accept(*this);
+        m_out << "\tNOT" << endl;
     }
     virtual void visit(NegNumericalExpressionNode &node)
     {
@@ -179,6 +244,21 @@ public:
     {
         node.getChild(0).accept(*this);
     }
+    virtual void visit(RepeatUntilNode &node)
+    {
+        string lblRepeatBegin = nextLabel("REPEAT_BEGIN_");
+        string lblRepeatEnd = nextLabel("REPEAT_END_");
+
+        m_out << lblRepeatBegin << ":" << endl;
+        node.getChild(0).accept(*this);
+
+        node.getChild(1).accept(*this);
+        m_out << "\tPUSH 0" << endl;
+        m_out << "\tCMPEQ" << endl;
+        m_out << "\tNOT" << endl;
+        m_out << "\tJMPZERO " << lblRepeatBegin << endl;
+        m_out << lblRepeatEnd << ":" << endl;
+    }
     virtual void visit(StatementBlockNode &node)
     {
         node.getChild(0).accept(*this);
@@ -194,14 +274,11 @@ public:
             return;
         node.getChild(1).accept(*this);
     }
-    virtual void visit(SubNumericalExpressionNode &node)
+    virtual void visit(SubExpressionNode &node)
     {
         node.getChild(0).accept(*this);
         node.getChild(1).accept(*this);
         m_out << "\tSUB" << endl;
-    }
-    virtual void visit(BinaryOperatorNode &node)
-    {
     }
     virtual void visit(WhileNode &node)
     {
@@ -219,41 +296,6 @@ public:
         node.getChild(0).accept(*this);
         node.getChild(1).accept(*this);
         m_out << "\tXOR" << endl;
-    }
-    virtual void visit(LessLogicalExpression &node)
-    {
-        node.getChild(0).accept(*this);
-        node.getChild(1).accept(*this);
-        m_out << "\tCMPLT" << endl;
-    }
-    virtual void visit(LessEqualLogicalExpression &node)
-    {
-        node.getChild(0).accept(*this);
-        node.getChild(1).accept(*this);
-        m_out << "\tCMPLE" << endl;
-    }
-    virtual void visit(GreaterLogicalExpression &node)
-    {
-        node.getChild(0).accept(*this);
-        node.getChild(1).accept(*this);
-        m_out << "\tCMPGT" << endl;
-    }
-    virtual void visit(GreaterEqualLogicalExpression &node)
-    {
-        node.getChild(0).accept(*this);
-        node.getChild(1).accept(*this);
-        m_out << "\tCMPGE" << endl;
-    }
-    virtual void visit(EqualLogicalExpression &node)
-    {
-        node.getChild(0).accept(*this);
-        node.getChild(1).accept(*this);
-        m_out << "\tCMPEQ" << endl;
-    }
-    virtual void visit(NegationLogicalExpressionNode &node)
-    {
-        node.getChild(0).accept(*this);
-        m_out << "\tNOT" << endl;
     }
 
 protected:

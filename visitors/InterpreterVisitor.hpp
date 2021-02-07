@@ -7,93 +7,261 @@ using namespace std;
 
 extern FILE *yyout;
 
+class Object
+{
+public:
+    friend ostream &operator<<(ostream &os, Object const &v)
+    {
+        return os;
+    }
+    virtual ~Object() = 0;
+};
+
+inline Object::~Object() {}
+
+class Integer : public Object
+{
+public:
+    Integer(int number) : number(number){};
+    int getNumber() { return number; }
+    void setNumber(int nunber) { this->number = number; }
+
+    friend ostream &operator<<(ostream &os, Integer const &v)
+    {
+        os << v.number;
+        return os;
+    }
+
+protected:
+    int number;
+};
+
+class Array : public Object
+{
+
+public:
+    Array(){};
+    void addValue(int value)
+    {
+        array.push_back(value);
+    }
+
+    void addArray(vector<int> array)
+    {
+        this->array.insert(this->array.end(), array.begin(), array.end());
+    }
+
+    void addValueToIndex(int value, int index)
+    {
+        array[index] = value;
+    }
+
+    int getValue(int index)
+    {
+        return array.at(index);
+    }
+
+    vector<int> getArray()
+    {
+        return this->array;
+    }
+
+    int getSize()
+    {
+        return array.size();
+    }
+
+    friend ostream &operator<<(ostream &os, Array const &v)
+    {
+        os << "[";
+        for (int i = 0; i < v.array.size(); ++i)
+        {
+            os << v.array.at(i);
+            if (i != v.array.size() - 1)
+            {
+                os << ",";
+            }
+        }
+        os << "]";
+        return os;
+    }
+
+protected:
+    vector<int> array;
+};
+
 class InterpreterVisitor : public ASTNodeVisitor
 {
 public:
     InterpreterVisitor() {}
-    virtual ~InterpreterVisitor() {}
-
-    virtual void visit(DifferenceLogicalExpression &node)
+    virtual ~InterpreterVisitor()
     {
-        node.getChild(0).accept(*this);
-        int lVal = m_results.back();
-        m_results.pop_back();
-        node.getChild(1).accept(*this);
-        int rVal = m_results.back();
-        m_results.pop_back();
-        m_results.push_back(lVal != rVal);
-    }
-    virtual void visit(IncrIdentifierNode &node)
-    {
-        int old = m_idToValue[((IdentifierNode &)node.getChild(0)).id()]++;
-        m_results.push_back(old);
-    }
-    virtual void visit(RepeatUntilNode &node)
-    {
-        node.getChild(1).accept(*this);
-        if (m_results.back() == 1)
-            return;
-        m_results.pop_back();
-
-        while (true)
+        for (auto it = m_results.begin(); it != m_results.end(); ++it)
         {
-            node.getChild(0).accept(*this);
-            m_results.pop_back();
-
-            node.getChild(1).accept(*this);
-            if (m_results.back() == 1)
-                break;
-            m_results.pop_back();
+            delete *it;
         }
-        m_results.clear();
     }
-    virtual void visit(AddNumericalExpressionNode &node)
+
+    void showAndThrowError(string message)
+    {
+        cout << "ERROR: " << message << endl;
+        throw new runtime_error("ERROR: " + message);
+    }
+
+    virtual void visit(AddExpressionNode &node)
     {
         node.getChild(0).accept(*this);
-        int lVal = m_results.back();
+        Array *firstArray = dynamic_cast<Array *>(m_results.back());
+        Integer *firstInteger = dynamic_cast<Integer *>(m_results.back());
         m_results.pop_back();
         node.getChild(1).accept(*this);
-        int rVal = m_results.back();
+        Array *secondArray = dynamic_cast<Array *>(m_results.back());
+        Integer *secondInteger = dynamic_cast<Integer *>(m_results.back());
         m_results.pop_back();
-        m_results.push_back(lVal + rVal);
+
+        if (firstArray && secondArray)
+        {
+            if (firstArray->getSize() != secondArray->getSize())
+            {
+                showAndThrowError("Arrays are of different lengths");
+            }
+            Array *res = new Array();
+            int arrSize = firstArray->getSize();
+            for (int i = 0; i < firstArray->getSize(); ++i)
+            {
+                res->addValue(firstArray->getValue(i) + secondArray->getValue(i));
+            }
+            m_results.push_back(res);
+        }
+        else if (firstInteger && secondInteger)
+        {
+            int lVal = ((Integer *)m_results.back())->getNumber();
+            m_results.pop_back();
+            node.getChild(1).accept(*this);
+            int rVal = ((Integer *)m_results.back())->getNumber();
+            m_results.pop_back();
+            m_results.push_back(new Integer(lVal + rVal));
+        }
+        else
+        {
+            showAndThrowError("Cannot ADD different types");
+        }
     }
     virtual void visit(AndLogicalExpressionNode &node)
     {
         node.getChild(0).accept(*this);
-        int lVal = m_results.back();
+        int lVal = ((Integer *)m_results.back())->getNumber();
         m_results.pop_back();
         node.getChild(1).accept(*this);
-        int rVal = m_results.back();
+        int rVal = ((Integer *)m_results.back())->getNumber();
         m_results.pop_back();
-        m_results.push_back(lVal && rVal);
+        m_results.push_back(new Integer(lVal && rVal));
+    }
+    virtual void visit(ArrayNode &node)
+    {
+        Array *array = new Array();
+        for (int i = 0; i < node.numChildren(); ++i)
+        {
+            node.getChild(i).accept(*this);
+            array->addValue(((Integer *)m_results.back())->getNumber());
+            m_results.pop_back();
+        }
+        m_results.push_back(array);
+    }
+    virtual void visit(AssignmentExpressionNode &node)
+    {
+        // this case is: identifier LSQUAREBR numericalExpression RSQUAREBR ASSIGN numericalExpression
+        if (node.numChildren() == 3)
+        {
+            node.getChild(1).accept(*this);
+            int index = ((Integer *)m_results.back())->getNumber();
+            m_results.pop_back();
+            node.getChild(2).accept(*this);
+            int value = ((Integer *)m_results.back())->getNumber();
+
+            ((Array *)m_idToValue[((IdentifierNode &)node.getChild(0)).id()])->addValueToIndex(value, index);
+        }
+        // this case is: identifier ASSIGN array | identifier ASSIGN expression
+        else
+        {
+            node.getChild(1).accept(*this);
+            m_idToValue[((IdentifierNode &)node.getChild(0)).id()] = m_results.back();
+        }
     }
     virtual void visit(AssignmentNode &node)
     {
         node.getChild(0).accept(*this);
     }
-    virtual void visit(AssignmentExpressionNode &node)
+    virtual void visit(BinaryOperatorNode &node)
     {
-        node.getChild(1).accept(*this);
-        m_idToValue[((IdentifierNode &)node.getChild(0)).id()] = m_results.back();
     }
-    virtual void visit(DivNumericalExpressionNode &node)
+    virtual void visit(DifferenceLogicalExpression &node)
     {
         node.getChild(0).accept(*this);
-        int lVal = m_results.back();
+        int lVal = ((Integer *)m_results.back())->getNumber();
         m_results.pop_back();
         node.getChild(1).accept(*this);
-        int rVal = m_results.back();
+        int rVal = ((Integer *)m_results.back())->getNumber();
         m_results.pop_back();
-        m_results.push_back(lVal / rVal);
+        m_results.push_back(new Integer(lVal != rVal));
+    }
+    virtual void visit(DivExpressionNode &node)
+    {
+        node.getChild(0).accept(*this);
+        Array *firstArray = dynamic_cast<Array *>(m_results.back());
+        Integer *firstInteger = dynamic_cast<Integer *>(m_results.back());
+        m_results.pop_back();
+        node.getChild(1).accept(*this);
+        Array *secondArray = dynamic_cast<Array *>(m_results.back());
+        Integer *secondInteger = dynamic_cast<Integer *>(m_results.back());
+        m_results.pop_back();
+
+        if (firstArray && secondArray)
+        {
+            if (firstArray->getSize() != secondArray->getSize())
+            {
+                showAndThrowError("Arrays are of different lengths");
+            }
+            Array *res = new Array();
+            int arrSize = firstArray->getSize();
+            for (int i = 0; i < firstArray->getSize(); ++i)
+            {
+                res->addValue(firstArray->getValue(i) / secondArray->getValue(i));
+            }
+            m_results.push_back(res);
+        }
+        else if (firstInteger && secondInteger)
+        {
+            int lVal = ((Integer *)m_results.back())->getNumber();
+            m_results.pop_back();
+            node.getChild(1).accept(*this);
+            int rVal = ((Integer *)m_results.back())->getNumber();
+            m_results.pop_back();
+            m_results.push_back(new Integer(lVal / rVal));
+        }
+        else
+        {
+            showAndThrowError("Cannot ADD different types");
+        }
     }
     virtual void visit(EmptyStatementNode &node) {}
+    virtual void visit(EqualLogicalExpression &node)
+    {
+        node.getChild(0).accept(*this);
+        int lVal = ((Integer *)m_results.back())->getNumber();
+        m_results.pop_back();
+        node.getChild(1).accept(*this);
+        int rVal = ((Integer *)m_results.back())->getNumber();
+        m_results.pop_back();
+        m_results.push_back(new Integer(lVal == rVal));
+    }
     virtual void visit(ExpressionStatementNode &node)
     {
         node.getChild(0).accept(*this);
     }
     virtual void visit(FloatNode &node)
     {
-        m_results.push_back((int)node.value());
+        m_results.push_back(new Integer((int)node.value()));
     }
     virtual void visit(ForNode &node)
     {
@@ -102,13 +270,40 @@ public:
         while (true)
         {
             node.getChild(1).accept(*this);
-            if (m_results.back() == 0)
+            if (((Integer *)m_results.back())->getNumber() == 0)
                 break;
             node.getChild(3).accept(*this);
             m_results.clear();
             node.getChild(2).accept(*this);
         }
         m_results.clear();
+    }
+    virtual void visit(GreaterEqualLogicalExpression &node)
+    {
+        node.getChild(0).accept(*this);
+        int lVal = ((Integer *)m_results.back())->getNumber();
+        m_results.pop_back();
+        node.getChild(1).accept(*this);
+        int rVal = ((Integer *)m_results.back())->getNumber();
+        m_results.pop_back();
+        m_results.push_back(new Integer(lVal >= rVal));
+    }
+    virtual void visit(GreaterLogicalExpression &node)
+    {
+        node.getChild(0).accept(*this);
+        int lVal = ((Integer *)m_results.back())->getNumber();
+        m_results.pop_back();
+        node.getChild(1).accept(*this);
+        int rVal = ((Integer *)m_results.back())->getNumber();
+        m_results.pop_back();
+        m_results.push_back(new Integer(lVal > rVal));
+    }
+    virtual void visit(IdentifierArrayNode &node)
+    {
+        string id = ((IdentifierNode &)node.getChild(0)).id();
+        node.getChild(1).accept(*this);
+        int index = ((Integer *)m_results.back())->getNumber();
+        m_results.push_back(new Integer(((Array *)m_idToValue[id])->getValue(index)));
     }
     virtual void visit(IdentifierExpressionNode &node)
     {
@@ -118,7 +313,7 @@ public:
     virtual void visit(IfElseNode &node)
     {
         node.getChild(0).accept(*this);
-        int condVal = m_results.back();
+        int condVal = ((Integer *)m_results.back())->getNumber();
         m_results.clear();
         if (condVal)
             node.getChild(1).accept(*this);
@@ -128,41 +323,110 @@ public:
     virtual void visit(IfNode &node)
     {
         node.getChild(0).accept(*this);
-        int condVal = m_results.back();
+        int condVal = ((Integer *)m_results.back())->getNumber();
         m_results.clear();
         if (condVal)
             node.getChild(1).accept(*this);
     }
+    virtual void visit(IncrIdentifierNode &node)
+    {
+        int old = ((Integer *)(m_idToValue[((IdentifierNode &)node.getChild(0)).id()]))->getNumber();
+        ((Integer *)(m_idToValue[((IdentifierNode &)node.getChild(0)).id()]))->setNumber(old + 1);
+        m_results.push_back(new Integer(old));
+    }
     virtual void visit(IntegerNode &node)
     {
-        m_results.push_back((int)node.value());
+        m_results.push_back(new Integer((int)node.value()));
     }
-    virtual void visit(MulNumericalExpressionNode &node)
+    virtual void visit(LessEqualLogicalExpression &node)
     {
         node.getChild(0).accept(*this);
-        int lVal = m_results.back();
+        int lVal = ((Integer *)m_results.back())->getNumber();
         m_results.pop_back();
         node.getChild(1).accept(*this);
-        int rVal = m_results.back();
+        int rVal = ((Integer *)m_results.back())->getNumber();
         m_results.pop_back();
-        m_results.push_back(lVal * rVal);
+        m_results.push_back(new Integer(lVal <= rVal));
+    }
+    virtual void visit(LessLogicalExpression &node)
+    {
+        node.getChild(0).accept(*this);
+        int lVal = ((Integer *)m_results.back())->getNumber();
+        m_results.pop_back();
+        node.getChild(1).accept(*this);
+        int rVal = ((Integer *)m_results.back())->getNumber();
+        m_results.pop_back();
+        m_results.push_back(new Integer(lVal < rVal));
+    }
+    virtual void visit(MulExpressionNode &node)
+    {
+        node.getChild(0).accept(*this);
+        Array *firstArray = dynamic_cast<Array *>(m_results.back());
+        Integer *firstInteger = dynamic_cast<Integer *>(m_results.back());
+        m_results.pop_back();
+        node.getChild(1).accept(*this);
+        Array *secondArray = dynamic_cast<Array *>(m_results.back());
+        Integer *secondInteger = dynamic_cast<Integer *>(m_results.back());
+        m_results.pop_back();
+
+        if (firstArray && secondArray)
+        {
+            if (firstArray->getSize() != secondArray->getSize())
+            {
+                showAndThrowError("Arrays are of different lengths");
+            }
+            Array *res = new Array();
+            int arrSize = firstArray->getSize();
+            for (int i = 0; i < firstArray->getSize(); ++i)
+            {
+                res->addValue(firstArray->getValue(i) * secondArray->getValue(i));
+            }
+            m_results.push_back(res);
+        }
+        else if (firstInteger && secondInteger)
+        {
+            int lVal = ((Integer *)m_results.back())->getNumber();
+            m_results.pop_back();
+            node.getChild(1).accept(*this);
+            int rVal = ((Integer *)m_results.back())->getNumber();
+            m_results.pop_back();
+            m_results.push_back(new Integer(lVal * rVal));
+        }
+        else
+        {
+            showAndThrowError("Cannot ADD different types");
+        }
+    }
+    virtual void visit(NegationLogicalExpressionNode &node)
+    {
+        node.getChild(0).accept(*this);
+        int lVal = ((Integer *)m_results.back())->getNumber();
+        m_results.pop_back();
+        m_results.push_back(new Integer(!lVal));
     }
     virtual void visit(NegNumericalExpressionNode &node)
     {
         node.getChild(0).accept(*this);
-        int lVal = m_results.back();
+        int lVal = ((Integer *)m_results.back())->getNumber();
         m_results.pop_back();
-        m_results.push_back(-lVal);
+        m_results.push_back(new Integer(-lVal));
+    }
+    virtual void visit(ExpressionsNode &node)
+    {
+        node.getChild(0).accept(*this);
+        if (node.numChildren() == 1)
+            return;
+        node.getChild(1).accept(*this);
     }
     virtual void visit(OrLogicalExpressionNode &node)
     {
         node.getChild(0).accept(*this);
-        int lVal = m_results.back();
+        int lVal = ((Integer *)m_results.back())->getNumber();
         m_results.pop_back();
         node.getChild(1).accept(*this);
-        int rVal = m_results.back();
+        int rVal = ((Integer *)m_results.back())->getNumber();
         m_results.pop_back();
-        m_results.push_back(lVal || rVal);
+        m_results.push_back(new Integer(lVal || rVal));
     }
     virtual void visit(PostFor &node)
     {
@@ -182,14 +446,42 @@ public:
     virtual void visit(PrintNode &node)
     {
         node.getChild(0).accept(*this);
-        int res = m_results.back();
-        cout << res << endl;
-        fprintf(yyout, "%d\n", res);
+        Object *res = m_results.back();
+        Array *arrayRes = dynamic_cast<Array *>(res);
+
+        if (arrayRes)
+        {
+            cout << *arrayRes << endl;
+        }
+        else
+        {
+            cout << *(Integer *)res << endl;
+        }
+        // fprintf(yyout, "%d\n", *res);
         m_results.pop_back();
     }
     virtual void visit(ProgramNode &node)
     {
         node.getChild(0).accept(*this);
+    }
+    virtual void visit(RepeatUntilNode &node)
+    {
+        node.getChild(1).accept(*this);
+        if (((Integer *)m_results.back())->getNumber() == 1)
+            return;
+        m_results.pop_back();
+
+        while (true)
+        {
+            node.getChild(0).accept(*this);
+            m_results.pop_back();
+
+            node.getChild(1).accept(*this);
+            if (((Integer *)m_results.back())->getNumber() == 1)
+                break;
+            m_results.pop_back();
+        }
+        m_results.clear();
     }
     virtual void visit(StatementBlockNode &node)
     {
@@ -206,25 +498,51 @@ public:
             return;
         node.getChild(1).accept(*this);
     }
-    virtual void visit(SubNumericalExpressionNode &node)
+    virtual void visit(SubExpressionNode &node)
     {
         node.getChild(0).accept(*this);
-        int lVal = m_results.back();
+        Array *firstArray = dynamic_cast<Array *>(m_results.back());
+        Integer *firstInteger = dynamic_cast<Integer *>(m_results.back());
         m_results.pop_back();
         node.getChild(1).accept(*this);
-        int rVal = m_results.back();
+        Array *secondArray = dynamic_cast<Array *>(m_results.back());
+        Integer *secondInteger = dynamic_cast<Integer *>(m_results.back());
         m_results.pop_back();
-        m_results.push_back(lVal - rVal);
-    }
-    virtual void visit(BinaryOperatorNode &node)
-    {
+
+        if (firstArray && secondArray)
+        {
+            if (firstArray->getSize() != secondArray->getSize())
+            {
+                showAndThrowError("Arrays are of different lengths");
+            }
+            Array *res = new Array();
+            int arrSize = firstArray->getSize();
+            for (int i = 0; i < firstArray->getSize(); ++i)
+            {
+                res->addValue(firstArray->getValue(i) - secondArray->getValue(i));
+            }
+            m_results.push_back(res);
+        }
+        else if (firstInteger && secondInteger)
+        {
+            int lVal = ((Integer *)m_results.back())->getNumber();
+            m_results.pop_back();
+            node.getChild(1).accept(*this);
+            int rVal = ((Integer *)m_results.back())->getNumber();
+            m_results.pop_back();
+            m_results.push_back(new Integer(lVal - rVal));
+        }
+        else
+        {
+            showAndThrowError("Cannot ADD different types");
+        }
     }
     virtual void visit(WhileNode &node)
     {
         while (true)
         {
             node.getChild(0).accept(*this);
-            if (m_results.back() == 0)
+            if (((Integer *)m_results.back())->getNumber() == 0)
                 break;
             m_results.clear();
             node.getChild(1).accept(*this);
@@ -234,72 +552,15 @@ public:
     virtual void visit(XorLogicalExpressionNode &node)
     {
         node.getChild(0).accept(*this);
-        int lVal = m_results.back();
+        int lVal = ((Integer *)m_results.back())->getNumber();
         m_results.pop_back();
         node.getChild(1).accept(*this);
-        int rVal = m_results.back();
+        int rVal = ((Integer *)m_results.back())->getNumber();
         m_results.pop_back();
-        m_results.push_back(lVal ^ rVal);
-    }
-    virtual void visit(LessLogicalExpression &node)
-    {
-        node.getChild(0).accept(*this);
-        int lVal = m_results.back();
-        m_results.pop_back();
-        node.getChild(1).accept(*this);
-        int rVal = m_results.back();
-        m_results.pop_back();
-        m_results.push_back(lVal < rVal);
-    }
-    virtual void visit(LessEqualLogicalExpression &node)
-    {
-        node.getChild(0).accept(*this);
-        int lVal = m_results.back();
-        m_results.pop_back();
-        node.getChild(1).accept(*this);
-        int rVal = m_results.back();
-        m_results.pop_back();
-        m_results.push_back(lVal <= rVal);
-    }
-    virtual void visit(GreaterLogicalExpression &node)
-    {
-        node.getChild(0).accept(*this);
-        int lVal = m_results.back();
-        m_results.pop_back();
-        node.getChild(1).accept(*this);
-        int rVal = m_results.back();
-        m_results.pop_back();
-        m_results.push_back(lVal > rVal);
-    }
-    virtual void visit(GreaterEqualLogicalExpression &node)
-    {
-        node.getChild(0).accept(*this);
-        int lVal = m_results.back();
-        m_results.pop_back();
-        node.getChild(1).accept(*this);
-        int rVal = m_results.back();
-        m_results.pop_back();
-        m_results.push_back(lVal >= rVal);
-    }
-    virtual void visit(EqualLogicalExpression &node)
-    {
-        node.getChild(0).accept(*this);
-        int lVal = m_results.back();
-        m_results.pop_back();
-        node.getChild(1).accept(*this);
-        int rVal = m_results.back();
-        m_results.pop_back();
-        m_results.push_back(lVal == rVal);
-    }
-    virtual void visit(NegationLogicalExpressionNode &node)
-    {
-        node.getChild(0).accept(*this);
-        int lVal = m_results.back();
-        m_results.pop_back();
-        m_results.push_back(!lVal);
+        m_results.push_back(new Integer(lVal ^ rVal));
     }
 
 protected:
-    unordered_map<string, int> m_idToValue;
-    deque<int> m_results;
+    unordered_map<string, Object *> m_idToValue;
+    deque<Object *> m_results;
 };
