@@ -36,7 +36,7 @@ void DBG(int id, string msg) {
 %token LPAREN RPAREN LCURLY RCURLY SEMICOL COMMA
 %token ADD SUB OR MUL DIV AND XOR NOT INCR
 %token EQ GR GREQ LS LSEQ DIFF
-%token IF ELSE FOR PRINT WHILE REPEAT UNTIL FN RETURN
+%token IF ELSE FOR PRINT WHILE REPEAT UNTIL FN RETURN VAR
 
 %precedence IFX
 %precedence ELSE
@@ -97,6 +97,8 @@ simpleStatement:
             RETURN expressionStatement { $$ = new ReturnStatementNode($2); DBG(58, "statement->RETURN expressionStatement"); }
         |
             FN identifier LPAREN fnParams RPAREN LCURLY statements RCURLY { $$ = new FnDefinitionNode($2, $4, $7); DBG(56, "FN identifier LPAREN fnParams RPAREN statementBlock"); }
+        |
+            VAR identifier ASSIGN expression SEMICOL { $$ = new VarDeclarationNode($2, $4); DBG(57, "simpleStatement->VAR identifier ASSIGN expression SEMICOL"); }   
         |
             assignmentExpression SEMICOL { $$ = new AssignmentNode($1); DBG(11, "simpleStatement->assignmentExpression"); }   
         ;

@@ -44,6 +44,7 @@ class FnCallNode;
 class FnParamsNode;
 class FnCallArgsNode;
 class ReturnStatementNode;
+class VarDeclarationNode;
 
 class ASTNodeVisitor
 {
@@ -93,4 +94,5 @@ public:
     virtual void visit(FnParamsNode &node) = 0;
     virtual void visit(FnCallArgsNode &node) = 0;
     virtual void visit(ReturnStatementNode &node) = 0;
+    virtual void visit(VarDeclarationNode &node) = 0;
 };

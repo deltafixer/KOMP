@@ -52,3 +52,4 @@ using namespace std;
 #include "FnCallNode.hpp"
 #include "FnCallArgsNode.hpp"
 #include "ReturnStatementNode.hpp"
+#include "VarDeclarationNode.hpp"

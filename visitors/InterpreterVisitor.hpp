@@ -452,6 +452,15 @@ public:
 
         throw new Return();
     }
+    virtual void visit(VarDeclarationNode &node)
+    {
+        string id = ((IdentifierNode &)node.getChild(0)).id();
+        node.getChild(1).accept(*this);
+        int res = m_results.back();
+        m_results.pop_back();
+
+        m_context->set_value(id, res);
+    }
 
 protected:
     Context *m_context;

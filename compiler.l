@@ -65,6 +65,7 @@ identifierChars [a-zA-Z0-9_]
 (?i:until)         { RETURN_TOKEN (UNTIL, "UNTIL"); }
 (?i:fn)            { RETURN_TOKEN (FN, "FN"); }
 (?i:return)        { RETURN_TOKEN (RETURN, "RETURN"); }
+(?i:var)           { RETURN_TOKEN (VAR, "VAR"); }
 
 {identifierStart}{identifierChars}* { yylval.stringVal = yytext; RETURN_TOKEN (IDENTIFIER, "IDENTIFIER"); }
 

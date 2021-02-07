@@ -270,6 +270,9 @@ public:
     virtual void visit(ReturnStatementNode &node)
     {
     }
+    virtual void visit(VarDeclarationNode &node)
+    {
+    }
 
 protected:
     unordered_map<string, int> m_name2id;
