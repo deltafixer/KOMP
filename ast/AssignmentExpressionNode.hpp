@@ -5,13 +5,13 @@
 class AssignmentExpressionNode : public ASTNode
 {
 public:
-    AssignmentExpressionNode(ASTNode *identifier, ASTNode *expressionOrArray, ASTNode *expression = nullptr) : ASTNode("AssignmentExpressionNode")
+    AssignmentExpressionNode(ASTNode *identifier, ASTNode *expression, ASTNode *expressionSecond = nullptr) : ASTNode("AssignmentExpressionNode")
     {
         pushChild(identifier);
-        pushChild(expressionOrArray);
-        if (expression)
+        pushChild(expression);
+        if (expressionSecond)
         {
-            pushChild(expression);
+            pushChild(expressionSecond);
         }
     }
     virtual ~AssignmentExpressionNode() {}
@@ -19,7 +19,6 @@ public:
     virtual void accept(ASTNodeVisitor &visitor) { visitor.visit(*this); }
     virtual void accept(ASTNodeVisitor &&visitor) { visitor.visit(*this); }
 
-    // TODO:
     virtual void toStream(ostream &out, string indent = "")
     {
         out << indent << "\"" << type() << "\": {" << endl;
@@ -31,6 +30,13 @@ public:
         m_children[1]->toStream(out, subIndent + indentShift);
         out << subIndent << "}" << endl;
         out << indent << "}" << endl;
+        if (m_children.size() == 3)
+        {
+            out << subIndent << "\"expression\": {" << endl;
+            m_children[2]->toStream(out, subIndent + indentShift);
+            out << subIndent << "}" << endl;
+            out << indent << "}" << endl;
+        }
     }
 
 protected:

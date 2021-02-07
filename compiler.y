@@ -201,7 +201,7 @@ logicalExpression:
 assignmentExpression:
             identifier ASSIGN expression { $$ = new AssignmentExpressionNode($1, $3); DBG(55, "assignmentExpression->identifier ASSIGN expression"); }
         |
-            identifier ASSIGN array { $$ = new AssignmentExpressionNode($1, $3); DBG(56, "assignmentExpression->identifier ASSIGN expression"); }
+            identifier ASSIGN arrayExpression { $$ = new AssignmentExpressionNode($1, $3); DBG(56, "assignmentExpression->identifier ASSIGN expression"); }
         |
             identifier LSQUAREBR expression RSQUAREBR ASSIGN expression { $$ = new AssignmentExpressionNode($1, $3, $6); DBG(57, "assignmentExpression->identifier LSQUAREBR expression RSQUAREBR ASSIGN expression"); }
         ;
