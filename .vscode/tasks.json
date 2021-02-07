@@ -41,7 +41,7 @@
             "label": "Parser build",
             "command": "g++",
             "args": [
-                "-std=gnu++14",
+                "-std=gnu++17",
                 "${fileDirname}/${fileBasenameNoExtension}.y.cpp",
                 "${fileDirname}/${fileBasenameNoExtension}.l.cpp",
                 "-lfl",
