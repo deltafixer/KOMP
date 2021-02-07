@@ -15,31 +15,31 @@ protected:
     unordered_map<string, int> m_idToValue;
     unordered_map<string, FnDefinitionNode *> m_functions;
 
-    Context *parent;
+    Context *m_parent;
 
 public:
     Context()
     {
-        parent = nullptr;
+        m_parent = nullptr;
     }
 
     Context(Context *parent)
     {
-        this->parent = parent;
+        this->m_parent = parent;
     }
 
     Context *get_parent()
     {
-        return parent;
+        return m_parent;
     }
 
     optional<int> get_value(const string &id)
     {
         if (m_idToValue.find(id) == m_idToValue.end())
         {
-            if (parent != nullptr)
+            if (m_parent != nullptr)
             {
-                return parent->get_value(id);
+                return m_parent->get_value(id);
             }
 
             return {};
@@ -48,24 +48,75 @@ public:
         return m_idToValue[id];
     }
 
+    int get_value_or_throw(const string &id)
+    {
+        auto val = get_value(id);
+
+        if (!val)
+        {
+            cout << "Variable with identifier '" << id << "' not found" << endl;
+            throw new runtime_error("Identifier not found");
+        }
+
+        return *val;
+    }
+
     void set_value(const string &id, int value)
     {
         m_idToValue[id] = value;
+    }
+
+    bool update_value(const string &id, int newValue)
+    {
+        if (m_idToValue.find(id) == m_idToValue.end())
+        {
+            if (m_parent != nullptr)
+            {
+                return m_parent->update_value(id, newValue);
+            }
+
+            return false;
+        }
+
+        m_idToValue[id] = newValue;
+        return true;
+    }
+
+    void update_value_or_throw(const string &id, int newValue)
+    {
+        bool exists = update_value(id, newValue);
+        if (!exists)
+        {
+            cout << "Variable with identifier '" << id << "' not found" << endl;
+            throw new runtime_error("Identifier not found");
+        }
     }
 
     optional<FnDefinitionNode *> get_function(const string &name)
     {
         if (m_functions.find(name) == m_functions.end())
         {
-            if (parent != nullptr)
+            if (m_parent != nullptr)
             {
-                return parent->get_function(name);
+                return m_parent->get_function(name);
             }
 
             return {};
         }
 
         return m_functions[name];
+    }
+
+    FnDefinitionNode *get_function_or_throw(const string &name)
+    {
+        optional<FnDefinitionNode *> fn = get_function(name);
+        if (!fn)
+        {
+            cout << "Function with name '" << name << "' not found in current scope" << endl;
+            throw new runtime_error("Function with name '" + name + "' not found in current scope");
+        }
+
+        return *fn;
     }
 
     void set_function(const string &name, FnDefinitionNode *fn)
@@ -101,8 +152,9 @@ public:
     virtual void visit(IncrIdentifierNode &node)
     {
         string id = ((IdentifierNode &)node.getChild(0)).id();
-        int old = get_value_or_throw(id);
-        m_context->set_value(id, old + 1);
+        int old = m_context->get_value_or_throw(id);
+        bool exists = m_context->update_value(id, old + 1);
+
         m_results.push_back(old);
     }
     virtual void visit(RepeatUntilNode &node)
@@ -152,7 +204,7 @@ public:
     {
         node.getChild(1).accept(*this);
         string id = ((IdentifierNode &)node.getChild(0)).id();
-        m_context->set_value(id, m_results.back());
+        m_context->update_value_or_throw(id, m_results.back());
     }
     virtual void visit(DivNumericalExpressionNode &node)
     {
@@ -191,7 +243,7 @@ public:
     virtual void visit(IdentifierExpressionNode &node)
     {
         string id = ((IdentifierNode &)node.getChild(0)).id();
-        int val = get_value_or_throw(id);
+        int val = m_context->get_value_or_throw(id);
         m_results.push_back(val);
     }
     virtual void visit(IdentifierNode &node) {}
@@ -389,7 +441,7 @@ public:
     {
         bool were_in_function = m_in_function;
         string fnName = ((IdentifierNode &)node.getChild(0)).id();
-        FnDefinitionNode *fn = get_function_or_throw(fnName);
+        FnDefinitionNode *fn = m_context->get_function_or_throw(fnName);
 
         auto &params = fn->getChild(1);
         auto &args = node.getChild(1);
@@ -477,30 +529,5 @@ protected:
         Context *outer = m_context;
         m_context = m_context->get_parent();
         delete outer;
-    }
-
-    int get_value_or_throw(const string &id)
-    {
-        auto val = m_context->get_value(id);
-
-        if (!val)
-        {
-            cout << "Variable with identifier '" << id << "' not found";
-            throw new runtime_error("Identifier not found");
-        }
-
-        return *val;
-    }
-
-    FnDefinitionNode *get_function_or_throw(const string &name)
-    {
-        optional<FnDefinitionNode *> fn = m_context->get_function(name);
-        if (!fn)
-        {
-            cout << "Function with name '" << name << "' not found in current scope" << endl;
-            throw new runtime_error("Function with name '" + name + "' not found in current scope");
-        }
-
-        return *fn;
     }
 };
