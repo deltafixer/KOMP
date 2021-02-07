@@ -79,6 +79,7 @@ public:
     InterpreterVisitor()
     {
         m_context = new Context();
+        m_in_function = false;
     }
 
     virtual ~InterpreterVisitor()
@@ -380,9 +381,41 @@ public:
     }
     virtual void visit(FnDefinitionNode &node)
     {
+        string id = ((IdentifierNode &)node.getChild(0)).id();
+        m_context->set_function(id, &node);
     }
     virtual void visit(FnCallNode &node)
     {
+        bool were_in_function = m_in_function;
+        string fnName = ((IdentifierNode &)node.getChild(0)).id();
+        FnDefinitionNode *fn = get_function_or_throw(fnName);
+
+        auto &params = fn->getChild(1);
+        auto &args = node.getChild(1);
+
+        int params_num = params.numChildren();
+        int args_num = args.numChildren();
+
+        if (params_num != args_num)
+        {
+            cout << "Function with name " << fnName << " expects " << params_num << " arguments, but " << args_num << " passed" << endl;
+            throw new runtime_error("Wrong number of arguments");
+        }
+
+        create_new_context();
+        for (int i = 0; i < params_num; ++i)
+        {
+            args.getChild(i).accept(*this);
+            int res = m_results.back();
+            m_results.pop_back();
+            string param_id = ((IdentifierNode &)params.getChild(i)).id();
+            m_context->set_value(param_id, res);
+        }
+
+        m_in_function = true;
+        fn->getChild(2).accept(*this);
+        restore_parent_context();
+        m_in_function = were_in_function;
     }
     virtual void visit(FnParamsNode &node)
     {
@@ -392,11 +425,27 @@ public:
     }
     virtual void visit(ReturnStatementNode &node)
     {
+        if (!m_in_function)
+        {
+            cout << "Return must be used only inside a function" << endl;
+            throw new runtime_error("Return must be used only inside a function");
+        }
+
+        if (node.numChildren() == 1)
+        {
+            node.getChild(0).accept(*this);
+            int res = m_results.back();
+            m_results.pop_back();
+            throw new Return(res);
+        }
+
+        throw new Return();
     }
 
 protected:
     Context *m_context;
     deque<int> m_results;
+    bool m_in_function;
 
     void create_new_context()
     {
