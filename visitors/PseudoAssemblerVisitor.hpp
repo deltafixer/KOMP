@@ -29,11 +29,31 @@ public:
     }
     virtual void visit(AssignmentExpressionNode &node)
     {
-        node.getChild(1).accept(*this);
-        string identifier = ((IdentifierNode &)node.getChild(0)).id();
-        if (m_name2id.count(identifier) == 0)
-            m_name2id[identifier] = m_name2id.size();
-        m_out << "\tPOP ID#" << m_name2id[identifier] << endl;
+        // this case is: identifier LSQUAREBR numericalExpression RSQUAREBR ASSIGN numericalExpression
+        if (node.numChildren() == 3)
+        {
+            string identifier = ((IdentifierNode &)node.getChild(0)).id();
+
+            node.getChild(1).accept(*this);
+            m_out << "\tPOP INDEX" << endl;
+            node.getChild(2).accept(*this);
+            m_out << "\tPOP VALUE" << endl;
+
+            m_out << "\tPUSH" << m_name2id[identifier] << endl;
+            m_out << "\tPUSH INDEX" << endl;
+            // imagine if m_name2id[identifier] is a pointer to the beginning of the array, adding to it, moves the pointer
+            m_out << "\tADD " << endl;
+            m_out << "\tPUSH VALUE" << endl;
+            // at given position of array, replace value with new value
+            m_out << "\tREPLACE " << endl;
+        }
+        // this case is: identifier ASSIGN array | identifier ASSIGN expression
+        else
+        {
+            string id = ((IdentifierNode &)node.getChild(0)).id();
+            node.getChild(1).accept(*this);
+            m_out << "\tPOP ID#" << m_name2id[id] << endl;
+        }
     }
     virtual void visit(AssignmentNode &node)
     {
@@ -104,6 +124,15 @@ public:
     }
     virtual void visit(IdentifierArrayNode &node)
     {
+        string identifier = ((IdentifierNode &)node.getChild(0)).id();
+
+        node.getChild(1).accept(*this);
+        m_out << "\tPOP INDEX" << endl;
+
+        m_out << "\tPUSH" << m_name2id[identifier] << endl;
+        m_out << "\tPUSH INDEX" << endl;
+        m_out << "\tADD " << endl;
+        // now pointing at: m_name2id[identifier].begin() + index
     }
     virtual void visit(IdentifierExpressionNode &node)
     {
