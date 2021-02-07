@@ -102,37 +102,49 @@ public:
         }
     }
 
+    void showAndThrowError(string message)
+    {
+        cout << "ERROR: " << message << endl;
+        throw new runtime_error("ERROR: " + message);
+    }
+
     virtual void visit(AddExpressionNode &node)
     {
         node.getChild(0).accept(*this);
-        Array *first = dynamic_cast<Array *>(m_results.back());
+        Array *firstArray = dynamic_cast<Array *>(m_results.back());
+        Integer *firstInteger = dynamic_cast<Integer *>(m_results.back());
+        m_results.pop_back();
+        node.getChild(1).accept(*this);
+        Array *secondArray = dynamic_cast<Array *>(m_results.back());
+        Integer *secondInteger = dynamic_cast<Integer *>(m_results.back());
+        m_results.pop_back();
 
-        // if first is Array, second surely is
-        if (first)
+        if (firstArray && secondArray)
         {
-            m_results.pop_back();
-            node.getChild(1).accept(*this);
-            Array *second = dynamic_cast<Array *>(m_results.back());
-            m_results.pop_back();
-            if (first->getSize() != second->getSize())
+            if (firstArray->getSize() != secondArray->getSize())
             {
-                return;
+                showAndThrowError("Arrays are of different lengths");
             }
             Array *res = new Array();
-            int arrSize = first->getSize();
-            for (int i = 0; i < first->getSize(); ++i)
+            int arrSize = firstArray->getSize();
+            for (int i = 0; i < firstArray->getSize(); ++i)
             {
-                res->addValue(first->getValue(i) + second->getValue(i));
+                res->addValue(firstArray->getValue(i) + secondArray->getValue(i));
             }
             m_results.push_back(res);
         }
-        else
+        else if (firstInteger && secondInteger)
         {
             int lVal = ((Integer *)m_results.back())->getNumber();
             m_results.pop_back();
+            node.getChild(1).accept(*this);
             int rVal = ((Integer *)m_results.back())->getNumber();
             m_results.pop_back();
             m_results.push_back(new Integer(lVal + rVal));
+        }
+        else
+        {
+            showAndThrowError("Cannot ADD different types");
         }
     }
     virtual void visit(AndLogicalExpressionNode &node)
@@ -158,7 +170,7 @@ public:
     }
     virtual void visit(AssignmentExpressionNode &node)
     {
-        // // this case is: identifier LSQUAREBR numericalExpression RSQUAREBR ASSIGN numericalExpression
+        // this case is: identifier LSQUAREBR numericalExpression RSQUAREBR ASSIGN numericalExpression
         if (node.numChildren() == 3)
         {
             node.getChild(1).accept(*this);
@@ -196,34 +208,40 @@ public:
     virtual void visit(DivExpressionNode &node)
     {
         node.getChild(0).accept(*this);
-        Array *first = dynamic_cast<Array *>(m_results.back());
+        Array *firstArray = dynamic_cast<Array *>(m_results.back());
+        Integer *firstInteger = dynamic_cast<Integer *>(m_results.back());
+        m_results.pop_back();
+        node.getChild(1).accept(*this);
+        Array *secondArray = dynamic_cast<Array *>(m_results.back());
+        Integer *secondInteger = dynamic_cast<Integer *>(m_results.back());
+        m_results.pop_back();
 
-        // if first is Array, second surely is
-        if (first)
+        if (firstArray && secondArray)
         {
-            m_results.pop_back();
-            node.getChild(1).accept(*this);
-            Array *second = dynamic_cast<Array *>(m_results.back());
-            m_results.pop_back();
-            if (first->getSize() != second->getSize())
+            if (firstArray->getSize() != secondArray->getSize())
             {
-                return;
+                showAndThrowError("Arrays are of different lengths");
             }
             Array *res = new Array();
-            int arrSize = first->getSize();
-            for (int i = 0; i < first->getSize(); ++i)
+            int arrSize = firstArray->getSize();
+            for (int i = 0; i < firstArray->getSize(); ++i)
             {
-                res->addValue(first->getValue(i) / second->getValue(i));
+                res->addValue(firstArray->getValue(i) / secondArray->getValue(i));
             }
             m_results.push_back(res);
         }
-        else
+        else if (firstInteger && secondInteger)
         {
             int lVal = ((Integer *)m_results.back())->getNumber();
             m_results.pop_back();
+            node.getChild(1).accept(*this);
             int rVal = ((Integer *)m_results.back())->getNumber();
             m_results.pop_back();
             m_results.push_back(new Integer(lVal / rVal));
+        }
+        else
+        {
+            showAndThrowError("Cannot ADD different types");
         }
     }
     virtual void visit(EmptyStatementNode &node) {}
@@ -343,34 +361,40 @@ public:
     virtual void visit(MulExpressionNode &node)
     {
         node.getChild(0).accept(*this);
-        Array *first = dynamic_cast<Array *>(m_results.back());
+        Array *firstArray = dynamic_cast<Array *>(m_results.back());
+        Integer *firstInteger = dynamic_cast<Integer *>(m_results.back());
+        m_results.pop_back();
+        node.getChild(1).accept(*this);
+        Array *secondArray = dynamic_cast<Array *>(m_results.back());
+        Integer *secondInteger = dynamic_cast<Integer *>(m_results.back());
+        m_results.pop_back();
 
-        // if first is Array, second surely is
-        if (first)
+        if (firstArray && secondArray)
         {
-            m_results.pop_back();
-            node.getChild(1).accept(*this);
-            Array *second = dynamic_cast<Array *>(m_results.back());
-            m_results.pop_back();
-            if (first->getSize() != second->getSize())
+            if (firstArray->getSize() != secondArray->getSize())
             {
-                return;
+                showAndThrowError("Arrays are of different lengths");
             }
             Array *res = new Array();
-            int arrSize = first->getSize();
-            for (int i = 0; i < first->getSize(); ++i)
+            int arrSize = firstArray->getSize();
+            for (int i = 0; i < firstArray->getSize(); ++i)
             {
-                res->addValue(first->getValue(i) * second->getValue(i));
+                res->addValue(firstArray->getValue(i) * secondArray->getValue(i));
             }
             m_results.push_back(res);
         }
-        else
+        else if (firstInteger && secondInteger)
         {
             int lVal = ((Integer *)m_results.back())->getNumber();
             m_results.pop_back();
+            node.getChild(1).accept(*this);
             int rVal = ((Integer *)m_results.back())->getNumber();
             m_results.pop_back();
             m_results.push_back(new Integer(lVal * rVal));
+        }
+        else
+        {
+            showAndThrowError("Cannot ADD different types");
         }
     }
     virtual void visit(NegationLogicalExpressionNode &node)
@@ -477,34 +501,40 @@ public:
     virtual void visit(SubExpressionNode &node)
     {
         node.getChild(0).accept(*this);
-        Array *first = dynamic_cast<Array *>(m_results.back());
+        Array *firstArray = dynamic_cast<Array *>(m_results.back());
+        Integer *firstInteger = dynamic_cast<Integer *>(m_results.back());
+        m_results.pop_back();
+        node.getChild(1).accept(*this);
+        Array *secondArray = dynamic_cast<Array *>(m_results.back());
+        Integer *secondInteger = dynamic_cast<Integer *>(m_results.back());
+        m_results.pop_back();
 
-        // if first is Array, second surely is
-        if (first)
+        if (firstArray && secondArray)
         {
-            m_results.pop_back();
-            node.getChild(1).accept(*this);
-            Array *second = dynamic_cast<Array *>(m_results.back());
-            m_results.pop_back();
-            if (first->getSize() != second->getSize())
+            if (firstArray->getSize() != secondArray->getSize())
             {
-                return;
+                showAndThrowError("Arrays are of different lengths");
             }
             Array *res = new Array();
-            int arrSize = first->getSize();
-            for (int i = 0; i < first->getSize(); ++i)
+            int arrSize = firstArray->getSize();
+            for (int i = 0; i < firstArray->getSize(); ++i)
             {
-                res->addValue(first->getValue(i) - second->getValue(i));
+                res->addValue(firstArray->getValue(i) - secondArray->getValue(i));
             }
             m_results.push_back(res);
         }
-        else
+        else if (firstInteger && secondInteger)
         {
             int lVal = ((Integer *)m_results.back())->getNumber();
             m_results.pop_back();
+            node.getChild(1).accept(*this);
             int rVal = ((Integer *)m_results.back())->getNumber();
             m_results.pop_back();
             m_results.push_back(new Integer(lVal - rVal));
+        }
+        else
+        {
+            showAndThrowError("Cannot ADD different types");
         }
     }
     virtual void visit(WhileNode &node)
