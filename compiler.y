@@ -36,7 +36,7 @@ void DBG(int id, string msg) {
 %token LPAREN RPAREN LCURLY RCURLY SEMICOL COMMA LSQUAREBR RSQUAREBR
 %token ADD SUB OR MUL DIV AND XOR NOT INCR
 %token EQ GR GREQ LS LSEQ DIFF
-%token IF ELSE FOR PRINT WHILE REPEAT UNTIL
+%token IF ELSE FOR PRINT WHILE REPEAT UNTIL FN RETURN VAR
 
 %precedence IFX
 %precedence ELSE
@@ -46,7 +46,7 @@ void DBG(int id, string msg) {
 %nonassoc NEG ASSIGN INCR
 %left EQ DIFF
 
-%type<node> program statements statement statementBlock simpleStatement expressionStatement expression 
+%type<node> program statements statement statementBlock simpleStatement expressionStatement expression fnParams fnCallArgs varDeclaration
 %type<node> numericalExpression logicalExpression assignmentExpression expressions preFor postFor arrayExpression arrayElementExpression
 %type<node> identifier constant array
 
@@ -94,7 +94,26 @@ simpleStatement:
         |
             REPEAT statement UNTIL logicalExpression SEMICOL { $$ = new RepeatUntilNode($2, $4); DBG(12, "simpleStatement->REPEAT statementBlock UNTIL expression SEMICOL"); }
         |
-            assignmentExpression SEMICOL { $$ = new AssignmentNode($1); DBG(13, "simpleStatement->assignmentExpression SEMICOL"); }   
+            RETURN expressionStatement { $$ = new ReturnStatementNode($2); DBG(58, "statement->RETURN expressionStatement"); }
+        |
+            FN identifier LPAREN fnParams RPAREN LCURLY statements RCURLY { $$ = new FnDefinitionNode($2, $4, $7); DBG(56, "FN identifier LPAREN fnParams RPAREN statementBlock"); }
+        |
+            varDeclaration SEMICOL {$$ = $1; DBG(57, "simpleStatement->varDeclaration SEMICOL"); }
+        |
+            assignmentExpression SEMICOL { $$ = new AssignmentNode($1); DBG(11, "simpleStatement->assignmentExpression"); }   
+        ;
+
+varDeclaration:
+            VAR identifier ASSIGN expression { $$ = new VarDeclarationNode($2, $4); DBG(57, "varDeclaration->VAR identifier ASSIGN expression SEMICOL"); }   
+        |
+            VAR identifier ASSIGN arrayExpression { $$ = new VarDeclarationNode($2, $4); DBG(57, "varDeclaration->VAR identifier ASSIGN expression SEMICOL"); }   
+
+fnParams:
+            fnParams COMMA identifier { $$ = new FnParamsNode($1, $3); DBG(38, "fnParams->fnParams COMMA identifier"); }
+        |
+            identifier                { $$ = new FnParamsNode($1); DBG(38, "fnParams->epsilon"); }
+        |
+            %empty                    { $$ = new FnParamsNode(); DBG(38, "fnParams->epsilon"); }
         ;
 
 expressionStatement:
@@ -136,7 +155,9 @@ numericalExpression:
         |
             identifier INCR { $$ = new IncrIdentifierNode($1);  DBG(29, "numericalExpression->identifier INCR"); }
         |
-            constant { $$ = $1; DBG(30, "numericalExpression->constant");  }
+            identifier LPAREN fnCallArgs RPAREN { $$ = new FnCallNode($1, $3); DBG(60, "numericalExpression->identifier LPAREN fnCallArgs RPAREN"); }
+        |
+            constant { $$ = $1;  DBG(37, "numericalExpression->identifier");  }
         ;
 
 expressions:
@@ -170,6 +191,14 @@ constant:
             INTEGER { $$ = new IntegerNode($1); DBG(41, "numericalExpression->INTEGER"); }
         |
             FLOAT { $$ = new FloatNode($1); DBG(42, "numericalExpression->FLOAT"); }
+        ;
+
+fnCallArgs:
+            fnCallArgs COMMA expression { $$ = new FnCallArgsNode($1, $3); DBG(40, "fnCallArgs->fnCallArgs COMMA expression"); }
+        |
+            expression { $$ = new FnCallArgsNode($1); DBG(40, "fnCallArgs->expression"); }
+        |
+            %empty { $$ = new FnCallArgsNode(); DBG(40, "fnCallArgs->epsilon"); }
         ;
 
 logicalExpression:
@@ -207,7 +236,9 @@ assignmentExpression:
         ;
 
 preFor:
-            assignmentExpression   { $$ = new PreFor($1); DBG(58, "preFor->assignmentExpression"); }
+            assignmentExpression   { $$ = new PreFor($1); DBG(31, "preFor->assignmentExpression"); }
+        | 
+            varDeclaration { $$ = new PreFor($1); DBG(31, "preFor->varDeclaration"); }
         ;
 
 postFor:
@@ -273,7 +304,7 @@ int main() {
 
     printf("Starting parser...\n");
     yyin = stdin;
-    test_case(strcat(cwd, "/test_files/test.dex"));
+    test_case(strcat(cwd, "/test_files/test7.dex"));
     
     //yyparse();
 

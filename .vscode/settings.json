@@ -2,6 +2,7 @@
     "files.associations": {
         "iosfwd": "cpp",
         "ostream": "cpp",
-        "system_error": "cpp"
+        "system_error": "cpp",
+        "optional": "cpp"
     }
 }

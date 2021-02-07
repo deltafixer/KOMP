@@ -1,7 +1,10 @@
+class Object;
 
 #include "../ast/all.hpp"
+#include "Return.hpp"
 
 #include <deque>
+#include <optional>
 
 using namespace std;
 
@@ -18,6 +21,122 @@ public:
 };
 
 inline Object::~Object() {}
+
+class Context
+{
+protected:
+    unordered_map<string, Object *> m_idToValue;
+    unordered_map<string, FnDefinitionNode *> m_functions;
+
+    Context *m_parent;
+
+public:
+    Context()
+    {
+        m_parent = nullptr;
+    }
+
+    Context(Context *parent)
+    {
+        this->m_parent = parent;
+    }
+
+    Context *get_parent()
+    {
+        return m_parent;
+    }
+
+    optional<Object *> get_value(const string &id)
+    {
+        if (m_idToValue.find(id) == m_idToValue.end())
+        {
+            if (m_parent != nullptr)
+            {
+                return m_parent->get_value(id);
+            }
+
+            return {};
+        }
+
+        return m_idToValue[id];
+    }
+
+    Object *get_value_or_throw(const string &id)
+    {
+        auto val = get_value(id);
+
+        if (!val)
+        {
+            cout << "Variable with identifier '" << id << "' not found" << endl;
+            throw new runtime_error("Identifier not found");
+        }
+
+        return *val;
+    }
+
+    void set_value(const string &id, Object *value)
+    {
+        m_idToValue[id] = value;
+    }
+
+    bool update_value(const string &id, Object *newValue)
+    {
+        if (m_idToValue.find(id) == m_idToValue.end())
+        {
+            if (m_parent != nullptr)
+            {
+                return m_parent->update_value(id, newValue);
+            }
+
+            return false;
+        }
+
+        m_idToValue[id] = newValue;
+        return true;
+    }
+
+    void update_value_or_throw(const string &id, Object *newValue)
+    {
+        bool exists = update_value(id, newValue);
+        if (!exists)
+        {
+            cout << "Variable with identifier '" << id << "' not found" << endl;
+            throw new runtime_error("Identifier not found");
+        }
+    }
+
+    optional<FnDefinitionNode *> get_function(const string &name)
+    {
+        if (m_functions.find(name) == m_functions.end())
+        {
+            if (m_parent != nullptr)
+            {
+                return m_parent->get_function(name);
+            }
+
+            return {};
+        }
+
+        return m_functions[name];
+    }
+
+    FnDefinitionNode *get_function_or_throw(const string &name)
+    {
+        optional<FnDefinitionNode *> fn = get_function(name);
+        if (!fn)
+        {
+            cout << "Function with name '" << name << "' not found in current scope" << endl;
+            throw new runtime_error("Function with name '" + name + "' not found in current scope");
+        }
+
+        return *fn;
+    }
+
+    void set_function(const string &name, FnDefinitionNode *fn)
+    {
+        m_functions[name] = fn;
+    }
+};
 
 class Integer : public Object
 {
@@ -93,9 +212,16 @@ protected:
 class InterpreterVisitor : public ASTNodeVisitor
 {
 public:
-    InterpreterVisitor() {}
+    InterpreterVisitor()
+    {
+        m_context = new Context();
+        m_in_function = false;
+    }
+
     virtual ~InterpreterVisitor()
     {
+        delete m_context;
+
         for (auto it = m_results.begin(); it != m_results.end(); ++it)
         {
             delete *it;
@@ -135,11 +261,8 @@ public:
         }
         else if (firstInteger && secondInteger)
         {
-            int lVal = ((Integer *)m_results.back())->getNumber();
-            m_results.pop_back();
-            node.getChild(1).accept(*this);
-            int rVal = ((Integer *)m_results.back())->getNumber();
-            m_results.pop_back();
+            int lVal = firstInteger->getNumber();
+            int rVal = secondInteger->getNumber();
             m_results.push_back(new Integer(lVal + rVal));
         }
         else
@@ -170,6 +293,8 @@ public:
     }
     virtual void visit(AssignmentExpressionNode &node)
     {
+        string id = ((IdentifierNode &)node.getChild(0)).id();
+
         // this case is: identifier LSQUAREBR numericalExpression RSQUAREBR ASSIGN numericalExpression
         if (node.numChildren() == 3)
         {
@@ -179,13 +304,14 @@ public:
             node.getChild(2).accept(*this);
             int value = ((Integer *)m_results.back())->getNumber();
 
-            ((Array *)m_idToValue[((IdentifierNode &)node.getChild(0)).id()])->addValueToIndex(value, index);
+            Array *arr = (Array *)m_context->get_value_or_throw(id);
+            arr->addValueToIndex(value, index);
         }
         // this case is: identifier ASSIGN array | identifier ASSIGN expression
         else
         {
             node.getChild(1).accept(*this);
-            m_idToValue[((IdentifierNode &)node.getChild(0)).id()] = m_results.back();
+            m_context->update_value_or_throw(id, m_results.back());
         }
     }
     virtual void visit(AssignmentNode &node)
@@ -265,18 +391,28 @@ public:
     }
     virtual void visit(ForNode &node)
     {
-        node.getChild(0).accept(*this);
-        m_results.clear();
-        while (true)
+        create_new_context();
+        try
         {
-            node.getChild(1).accept(*this);
-            if (((Integer *)m_results.back())->getNumber() == 0)
-                break;
-            node.getChild(3).accept(*this);
+            node.getChild(0).accept(*this);
             m_results.clear();
-            node.getChild(2).accept(*this);
+            while (true)
+            {
+                node.getChild(1).accept(*this);
+                if (((Integer *)m_results.back())->getNumber() == 0)
+                    break;
+                node.getChild(3).accept(*this);
+                m_results.clear();
+                node.getChild(2).accept(*this);
+            }
+            m_results.clear();
         }
-        m_results.clear();
+        catch (Return *r)
+        {
+            restore_parent_context();
+            throw r;
+        }
+        restore_parent_context();
     }
     virtual void visit(GreaterEqualLogicalExpression &node)
     {
@@ -303,11 +439,13 @@ public:
         string id = ((IdentifierNode &)node.getChild(0)).id();
         node.getChild(1).accept(*this);
         int index = ((Integer *)m_results.back())->getNumber();
-        m_results.push_back(new Integer(((Array *)m_idToValue[id])->getValue(index)));
+        Array *arr = (Array *)m_context->get_value_or_throw(id);
+        m_results.push_back(new Integer(arr->getValue(index)));
     }
     virtual void visit(IdentifierExpressionNode &node)
     {
-        m_results.push_back(m_idToValue[((IdentifierNode &)node.getChild(0)).id()]);
+        string id = ((IdentifierNode &)node.getChild(0)).id();
+        m_results.push_back(m_context->get_value_or_throw(id));
     }
     virtual void visit(IdentifierNode &node) {}
     virtual void visit(IfElseNode &node)
@@ -330,9 +468,11 @@ public:
     }
     virtual void visit(IncrIdentifierNode &node)
     {
-        int old = ((Integer *)(m_idToValue[((IdentifierNode &)node.getChild(0)).id()]))->getNumber();
-        ((Integer *)(m_idToValue[((IdentifierNode &)node.getChild(0)).id()]))->setNumber(old + 1);
-        m_results.push_back(new Integer(old));
+        string id = ((IdentifierNode &)node.getChild(0)).id();
+        Integer *old = (Integer *)m_context->get_value_or_throw(id);
+        m_context->update_value(id, new Integer(old->getNumber() + 1));
+
+        m_results.push_back(old);
     }
     virtual void visit(IntegerNode &node)
     {
@@ -457,7 +597,21 @@ public:
         {
             cout << *(Integer *)res << endl;
         }
-        // fprintf(yyout, "%d\n", *res);
+
+        if (arrayRes)
+        {
+            fprintf(yyout, "[");
+            int n = arrayRes->getSize();
+            for (int i = 0; i < n - 1; ++i)
+            {
+                fprintf(yyout, "%d, ", arrayRes->getValue(i));
+            }
+            fprintf(yyout, "%d]\n", arrayRes->getValue(n - 1));
+        }
+        else
+        {
+            fprintf(yyout, "%d\n", ((Integer *)res)->getNumber());
+        }
         m_results.pop_back();
     }
     virtual void visit(ProgramNode &node)
@@ -485,7 +639,18 @@ public:
     }
     virtual void visit(StatementBlockNode &node)
     {
-        node.getChild(0).accept(*this);
+        create_new_context();
+        try
+        {
+            node.getChild(0).accept(*this);
+        }
+        catch (Return *ret)
+        {
+            restore_parent_context();
+            throw ret;
+        }
+
+        restore_parent_context();
     }
     virtual void visit(StatementNode &node)
     {
@@ -559,8 +724,109 @@ public:
         m_results.pop_back();
         m_results.push_back(new Integer(lVal ^ rVal));
     }
+    virtual void visit(FnDefinitionNode &node)
+    {
+        string id = ((IdentifierNode &)node.getChild(0)).id();
+        m_context->set_function(id, &node);
+    }
+    virtual void visit(FnCallNode &node)
+    {
+        bool were_in_function = m_in_function;
+        string fnName = ((IdentifierNode &)node.getChild(0)).id();
+        FnDefinitionNode *fn = m_context->get_function_or_throw(fnName);
+
+        auto &params = fn->getChild(1);
+        auto &args = node.getChild(1);
+
+        int params_num = params.numChildren();
+        int args_num = args.numChildren();
+
+        if (params_num != args_num)
+        {
+            cout << "Function with name " << fnName << " expects " << params_num << " arguments, but " << args_num << " passed" << endl;
+            throw new runtime_error("Wrong number of arguments");
+        }
+
+        unordered_map<string, Object *> param_to_arg;
+
+        for (int i = 0; i < params_num; ++i)
+        {
+            args.getChild(i).accept(*this);
+            Object *res = m_results.back();
+            m_results.pop_back();
+            string param_id = ((IdentifierNode &)params.getChild(i)).id();
+            param_to_arg[param_id] = res;
+        }
+
+        create_new_context();
+        for (auto it = param_to_arg.begin(); it != param_to_arg.end(); it++)
+        {
+            m_context->set_value(it->first, it->second);
+        }
+
+        m_in_function = true;
+        try
+        {
+            fn->getChild(2).accept(*this);
+        }
+        catch (Return *ret)
+        {
+            if (ret->result)
+            {
+                m_results.push_back(*(ret->result));
+            }
+        }
+        restore_parent_context();
+        m_in_function = were_in_function;
+    }
+    virtual void visit(FnParamsNode &node)
+    {
+    }
+    virtual void visit(FnCallArgsNode &node)
+    {
+    }
+    virtual void visit(ReturnStatementNode &node)
+    {
+        if (!m_in_function)
+        {
+            cout << "Return must be used only inside a function" << endl;
+            throw new runtime_error("Return must be used only inside a function");
+        }
+
+        if (node.numChildren() == 1)
+        {
+            node.getChild(0).accept(*this);
+            Object *res = m_results.back();
+            m_results.pop_back();
+            throw new Return(res);
+        }
+
+        throw new Return();
+    }
+    virtual void visit(VarDeclarationNode &node)
+    {
+        string id = ((IdentifierNode &)node.getChild(0)).id();
+        node.getChild(1).accept(*this);
+        Object *res = m_results.back();
+        m_results.pop_back();
+
+        m_context->set_value(id, res);
+    }
 
 protected:
-    unordered_map<string, Object *> m_idToValue;
+    Context *m_context;
     deque<Object *> m_results;
+    bool m_in_function;
+
+    void create_new_context()
+    {
+        m_context = new Context(m_context);
+    }
+
+    void restore_parent_context()
+    {
+        Context *outer = m_context;
+        m_context = m_context->get_parent();
+        delete outer;
+    }
 };

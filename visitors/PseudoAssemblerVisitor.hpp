@@ -6,10 +6,103 @@
 
 using namespace std;
 
+class PseudoAssemblerContext
+{
+protected:
+    unordered_map<string, int> m_nameToId;
+    unordered_map<string, string> m_nameToLabel;
+
+    PseudoAssemblerContext *m_parent;
+
+    static int NEXT_ID;
+
+public:
+    PseudoAssemblerContext()
+    {
+        m_parent = nullptr;
+    }
+
+    PseudoAssemblerContext(PseudoAssemblerContext *parent)
+    {
+        this->m_parent = parent;
+    }
+
+    PseudoAssemblerContext *get_parent()
+    {
+        return m_parent;
+    }
+
+    optional<int> get_id(const string &name)
+    {
+        if (m_nameToId.find(name) == m_nameToId.end())
+        {
+            if (m_parent != nullptr)
+            {
+                return m_parent->get_id(name);
+            }
+
+            return {};
+        }
+
+        return m_nameToId[name];
+    }
+
+    int get_id_or_throw(const string &name)
+    {
+        auto id_opt = get_id(name);
+        if (!id_opt)
+        {
+            cout << "\nCompile error: identifier '" << name << "' not found" << endl;
+            throw new runtime_error("Compile error: identifier '" + name + "' not found");
+        }
+
+        return *id_opt;
+    }
+
+    int add(const string &name)
+    {
+        m_nameToId[name] = PseudoAssemblerContext::NEXT_ID++;
+        return m_nameToId[name];
+    }
+
+    void add_function(string name, string begin_label)
+    {
+        m_nameToLabel[name] = begin_label;
+    }
+
+    optional<string> get_function_label(const string &name)
+    {
+        if (m_nameToLabel.find(name) == m_nameToLabel.end())
+        {
+            if (m_parent != nullptr)
+            {
+                return m_parent->get_function_label(name);
+            }
+
+            return {};
+        }
+
+        return m_nameToLabel[name];
+    }
+
+    string get_function_label_or_throw(const string &name)
+    {
+        auto label_opt = get_function_label(name);
+        if (!label_opt)
+        {
+            cout << "\nCompile error: function '" << name << "' not found" << endl;
+            throw new runtime_error("Compile error: function '" + name + "' not found");
+        }
+        return *label_opt;
+    }
+};
+
+int PseudoAssemblerContext::NEXT_ID = 0;
+
 class PseudoAssemblerVisitor : public ASTNodeVisitor
 {
 public:
-    PseudoAssemblerVisitor(ostream &out = cout) : m_out(out), m_lastLabel(0) {}
+    PseudoAssemblerVisitor(ostream &out = cout) : m_out(out), m_lastLabel(0), m_context(new PseudoAssemblerContext()) {}
     virtual ~PseudoAssemblerVisitor() {}
 
     virtual void visit(AddExpressionNode &node)
@@ -32,16 +125,17 @@ public:
         // this case is: identifier LSQUAREBR numericalExpression RSQUAREBR ASSIGN numericalExpression
         if (node.numChildren() == 3)
         {
-            string identifier = ((IdentifierNode &)node.getChild(0)).id();
+            string name = ((IdentifierNode &)node.getChild(0)).id();
+            int id = m_context->get_id_or_throw(name);
 
             node.getChild(1).accept(*this);
             m_out << "\tPOP INDEX" << endl;
             node.getChild(2).accept(*this);
             m_out << "\tPOP VALUE" << endl;
 
-            m_out << "\tPUSH" << m_name2id[identifier] << endl;
+            m_out << "\tPUSH" << id << endl;
             m_out << "\tPUSH INDEX" << endl;
-            // imagine if m_name2id[identifier] is a pointer to the beginning of the array, adding to it, moves the pointer
+            // imagine if 'id' is a pointer to the beginning of the array, adding to it, moves the pointer
             m_out << "\tADD " << endl;
             m_out << "\tPUSH VALUE" << endl;
             // at given position of array, replace value with new value
@@ -50,9 +144,9 @@ public:
         // this case is: identifier ASSIGN array | identifier ASSIGN expression
         else
         {
-            string id = ((IdentifierNode &)node.getChild(0)).id();
             node.getChild(1).accept(*this);
-            m_out << "\tPOP ID#" << m_name2id[id] << endl;
+            string name = ((IdentifierNode &)node.getChild(0)).id();
+            m_out << "\tPOP ID#" << m_context->get_id_or_throw(name) << endl;
         }
     }
     virtual void visit(AssignmentNode &node)
@@ -99,6 +193,7 @@ public:
     }
     virtual void visit(ForNode &node)
     {
+        create_new_context();
         node.getChild(0).accept(*this);
         string lblCond = nextLabel("FOR_COND_");
         string lblEnd = nextLabel("FOR_END_");
@@ -109,6 +204,7 @@ public:
         node.getChild(2).accept(*this);
         m_out << "\tJMP " << lblCond << endl;
         m_out << lblEnd << ":" << endl;
+        restore_parent_context();
     }
     virtual void visit(GreaterEqualLogicalExpression &node)
     {
@@ -124,22 +220,21 @@ public:
     }
     virtual void visit(IdentifierArrayNode &node)
     {
-        string identifier = ((IdentifierNode &)node.getChild(0)).id();
+        string name = ((IdentifierNode &)node.getChild(0)).id();
+        int id = m_context->get_id_or_throw(name);
 
         node.getChild(1).accept(*this);
         m_out << "\tPOP INDEX" << endl;
 
-        m_out << "\tPUSH" << m_name2id[identifier] << endl;
+        m_out << "\tPUSH" << id << endl;
         m_out << "\tPUSH INDEX" << endl;
         m_out << "\tADD " << endl;
-        // now pointing at: m_name2id[identifier].begin() + index
+        // now pointing at: id.begin() + index
     }
     virtual void visit(IdentifierExpressionNode &node)
     {
-        string identifier = ((IdentifierNode &)node.getChild(0)).id();
-        if (m_name2id.count(identifier) == 0)
-            m_name2id[identifier] = m_name2id.size();
-        m_out << "\tPUSH ID#" << m_name2id[identifier] << endl;
+        string name = ((IdentifierNode &)node.getChild(0)).id();
+        m_out << "\tPUSH ID#" << m_context->get_id_or_throw(name) << endl;
     }
     virtual void visit(IdentifierNode &node) {}
     virtual void visit(IfElseNode &node)
@@ -167,19 +262,18 @@ public:
     {
         string lblIncr = nextLabel("INCR_");
 
-        string identifier = ((IdentifierNode &)node.getChild(0)).id();
-        if (m_name2id.count(identifier) == 0)
-            m_name2id[identifier] = m_name2id.size();
+        string name = ((IdentifierNode &)node.getChild(0)).id();
+        int id = m_context->get_id_or_throw(name);
 
         m_out << lblIncr << ":" << endl;
-        m_out << "\tPUSH ID#" << m_name2id[identifier] << endl;
+        m_out << "\tPUSH ID#" << id << endl;
         m_out << "\tPOP tmp" << endl;
 
         m_out << "\tPUSH tmp" << endl;
         m_out << "\tPUSH 1" << endl;
         m_out << "\tADD" << endl;
 
-        m_out << "\tPOP ID#" << m_name2id[identifier] << endl;
+        m_out << "\tPOP ID#" << id << endl;
         m_out << "\tPUSH tmp" << endl;
     }
     virtual void visit(IntegerNode &node)
@@ -261,7 +355,9 @@ public:
     }
     virtual void visit(StatementBlockNode &node)
     {
+        create_new_context();
         node.getChild(0).accept(*this);
+        restore_parent_context();
     }
     virtual void visit(StatementNode &node)
     {
@@ -297,9 +393,72 @@ public:
         node.getChild(1).accept(*this);
         m_out << "\tXOR" << endl;
     }
+    virtual void visit(FnDefinitionNode &node)
+    {
+        string name = ((IdentifierNode &)node.getChild(0)).id();
+        string lblBegin = nextLabel(name + "_BEGIN_");
+        string lblEnd = nextLabel(name + "_END_");
+
+        m_context->add_function(name, lblBegin);
+
+        create_new_context();
+        m_out << "\tJMP " << lblEnd << endl;
+
+        m_out << lblBegin << ":" << endl;
+
+        auto &params = node.getChild(1);
+
+        for (int i = 0; i < params.numChildren(); ++i)
+        {
+            string name = ((IdentifierNode &)params.getChild(i)).id();
+            m_out << "\tPOP ID#" << m_context->add(name) << endl;
+        }
+
+        node.getChild(2).accept(*this);
+
+        m_out << "\tRET0" << endl; // in case return statement doesn't appear in function body
+        m_out << lblEnd << ":" << endl;
+        restore_parent_context();
+    }
+    virtual void visit(FnCallNode &node)
+    {
+        string name = ((IdentifierNode &)node.getChild(0)).id();
+        auto &args = node.getChild(1);
+
+        for (int i = args.numChildren() - 1; i >= 0; --i)
+        {
+            args.getChild(i).accept(*this);
+        }
+
+        m_out << "\tCALL " << m_context->get_function_label_or_throw(name) << endl;
+    }
+    virtual void visit(FnParamsNode &node)
+    {
+    }
+    virtual void visit(FnCallArgsNode &node)
+    {
+    }
+    virtual void visit(ReturnStatementNode &node)
+    {
+        if (node.numChildren() == 1)
+        {
+            node.getChild(0).accept(*this);
+            m_out << "\tRET" << endl;
+        }
+        else
+        {
+            m_out << "\tRET0" << endl;
+        }
+    }
+    virtual void visit(VarDeclarationNode &node)
+    {
+        node.getChild(1).accept(*this);
+        string name = ((IdentifierNode &)node.getChild(0)).id();
+        m_out << "\tPOP ID#" << m_context->add(name) << endl;
+    }
 
 protected:
-    unordered_map<string, int> m_name2id;
+    PseudoAssemblerContext *m_context;
     ostream &m_out;
     int m_lastLabel;
 
@@ -308,5 +467,17 @@ protected:
         ostringstream out;
         out << prefix << ++m_lastLabel;
         return out.str();
+    }
+
+    void create_new_context()
+    {
+        m_context = new PseudoAssemblerContext(m_context);
+    }
+
+    void restore_parent_context()
+    {
+        PseudoAssemblerContext *outer = m_context;
+        m_context = m_context->get_parent();
+        delete outer;
     }
 };

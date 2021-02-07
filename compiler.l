@@ -9,7 +9,7 @@
 
 extern void DBG(int, string);
 
-#define RETURN(val, debugMsg) DBG(val, debugMsg); return val;
+#define RETURN_TOKEN(val, debugMsg) DBG(val, debugMsg); return val;
 %}
 
 
@@ -23,57 +23,60 @@ identifierChars [a-zA-Z0-9_]
 
 \n              { yylineno++; }
 
-";"             { RETURN (SEMICOL, "SEMICOL"); }
-","             { RETURN (COMMA, "COMMA"); }
+";"             { RETURN_TOKEN (SEMICOL, "SEMICOL"); }
+","             { RETURN_TOKEN (COMMA, "COMMA"); }
 
-"{"             { RETURN (LCURLY, "LCURLY"); }
-"}"             { RETURN (RCURLY, "RCURLY"); }
-"("             { RETURN (LPAREN, "LPAREN"); }
-")"             { RETURN (RPAREN, "RPAREN"); }
-"["             { RETURN (LSQUAREBR, "LSQUAREBR"); }
-"]"             { RETURN (RSQUAREBR, "RSQUAREBR"); }
+"{"             { RETURN_TOKEN (LCURLY, "LCURLY"); }
+"}"             { RETURN_TOKEN (RCURLY, "RCURLY"); }
+"("             { RETURN_TOKEN (LPAREN, "LPAREN"); }
+")"             { RETURN_TOKEN (RPAREN, "RPAREN"); }
+"["             { RETURN_TOKEN (LSQUAREBR, "LSQUAREBR"); }
+"]"             { RETURN_TOKEN (RSQUAREBR, "RSQUAREBR"); }
 
-"++"             { RETURN (INCR, "INCR"); }
+"++"             { RETURN_TOKEN (INCR, "INCR"); }
 
-"+"             { RETURN (ADD, "ADD"); }
-"-"             { RETURN (SUB, "SUB"); }
-"*"             { RETURN (MUL, "MUL"); }
-"/"             { RETURN (DIV, "DIV"); }
+"+"             { RETURN_TOKEN (ADD, "ADD"); }
+"-"             { RETURN_TOKEN (SUB, "SUB"); }
+"*"             { RETURN_TOKEN (MUL, "MUL"); }
+"/"             { RETURN_TOKEN (DIV, "DIV"); }
 
-">="             { RETURN (GREQ, "GREQ"); }
-"<="             { RETURN (LSEQ, "LSEQ"); }
-"=="             { RETURN (EQ, "EQ"); }
-">"             { RETURN (GR, "GR"); }
-"<"             { RETURN (LS, "LS"); }
-"!="             { RETURN (DIFF, "DIFF"); }
+">="             { RETURN_TOKEN (GREQ, "GREQ"); }
+"<="             { RETURN_TOKEN (LSEQ, "LSEQ"); }
+"=="             { RETURN_TOKEN (EQ, "EQ"); }
+">"             { RETURN_TOKEN (GR, "GR"); }
+"<"             { RETURN_TOKEN (LS, "LS"); }
+"!="             { RETURN_TOKEN (DIFF, "DIFF"); }
 
-"&&"             { RETURN (AND, "AND"); }
-"||"             { RETURN (OR, "OR"); }
-"^"             { RETURN (XOR, "XOR"); }
-"!"             { RETURN (NOT, "NOT"); }
+"&&"             { RETURN_TOKEN (AND, "AND"); }
+"||"             { RETURN_TOKEN (OR, "OR"); }
+"^"             { RETURN_TOKEN (XOR, "XOR"); }
+"!"             { RETURN_TOKEN (NOT, "NOT"); }
 
-"="             { RETURN (ASSIGN, "ASSIGN"); }
+"="             { RETURN_TOKEN (ASSIGN, "ASSIGN"); }
 
-{digit}+        { yylval.intVal = atoi(yytext); RETURN (INTEGER, "INTEGER"); }
+{digit}+        { yylval.intVal = atoi(yytext); RETURN_TOKEN (INTEGER, "INTEGER"); }
 
-{digit}+\.{digit}+  { yylval.floatVal = atof(yytext); RETURN (FLOAT, "FLOAT"); }
+{digit}+\.{digit}+  { yylval.floatVal = atof(yytext); RETURN_TOKEN (FLOAT, "FLOAT"); }
 
-(?i:if)            { RETURN (IF, "IF"); }
-(?i:else)          { RETURN (ELSE, "ELSE"); }
-(?i:for)           { RETURN (FOR, "FOR"); }
-(?i:print)         { RETURN (PRINT, "PRINT"); }
-(?i:while)         { RETURN (WHILE, "WHILE"); }
-(?i:repeat)         { RETURN (REPEAT, "REPEAT"); }
-(?i:until)         { RETURN (UNTIL, "UNTIL"); }
+(?i:if)            { RETURN_TOKEN (IF, "IF"); }
+(?i:else)          { RETURN_TOKEN (ELSE, "ELSE"); }
+(?i:for)           { RETURN_TOKEN (FOR, "FOR"); }
+(?i:print)         { RETURN_TOKEN (PRINT, "PRINT"); }
+(?i:while)         { RETURN_TOKEN (WHILE, "WHILE"); }
+(?i:repeat)        { RETURN_TOKEN (REPEAT, "REPEAT"); }
+(?i:until)         { RETURN_TOKEN (UNTIL, "UNTIL"); }
+(?i:fn)            { RETURN_TOKEN (FN, "FN"); }
+(?i:return)        { RETURN_TOKEN (RETURN, "RETURN"); }
+(?i:var)           { RETURN_TOKEN (VAR, "VAR"); }
 
-{identifierStart}{identifierChars}* { yylval.stringVal = yytext; RETURN (IDENTIFIER, "IDENTIFIER"); }
+{identifierStart}{identifierChars}* { yylval.stringVal = yytext; RETURN_TOKEN (IDENTIFIER, "IDENTIFIER"); }
 
 [\0]                {}
 
-.                   { RETURN (*yytext, "REST"); }
+.                   { RETURN_TOKEN (*yytext, "REST"); }
 
 %%
 
 int yywrap() {
-    RETURN (1, "");
+    RETURN_TOKEN (1, "");
 }
