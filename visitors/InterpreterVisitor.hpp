@@ -326,7 +326,16 @@ public:
     virtual void visit(StatementBlockNode &node)
     {
         create_new_context();
-        node.getChild(0).accept(*this);
+        try
+        {
+            node.getChild(0).accept(*this);
+        }
+        catch (Return *ret)
+        {
+            restore_parent_context();
+            throw ret;
+        }
+
         restore_parent_context();
     }
     virtual void visit(StatementNode &node)
