@@ -227,18 +227,28 @@ public:
     }
     virtual void visit(ForNode &node)
     {
-        node.getChild(0).accept(*this);
-        m_results.clear();
-        while (true)
+        create_new_context();
+        try
         {
-            node.getChild(1).accept(*this);
-            if (m_results.back() == 0)
-                break;
-            node.getChild(3).accept(*this);
+            node.getChild(0).accept(*this);
             m_results.clear();
-            node.getChild(2).accept(*this);
+            while (true)
+            {
+                node.getChild(1).accept(*this);
+                if (m_results.back() == 0)
+                    break;
+                node.getChild(3).accept(*this);
+                m_results.clear();
+                node.getChild(2).accept(*this);
+            }
+            m_results.clear();
         }
-        m_results.clear();
+        catch (Return *r)
+        {
+            restore_parent_context();
+            throw r;
+        }
+        restore_parent_context();
     }
     virtual void visit(IdentifierExpressionNode &node)
     {

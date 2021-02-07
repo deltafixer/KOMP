@@ -46,7 +46,7 @@ void DBG(int id, string msg) {
 %nonassoc NEG ASSIGN INCR
 %left EQ DIFF
 
-%type<node> program statements statement statementBlock simpleStatement expressionStatement expression fnParams fnCallArgs
+%type<node> program statements statement statementBlock simpleStatement expressionStatement expression fnParams fnCallArgs varDeclaration
 %type<node> numericalExpression logicalExpression assignmentExpression preFor postFor 
 %type<node> identifier constant
 
@@ -98,10 +98,13 @@ simpleStatement:
         |
             FN identifier LPAREN fnParams RPAREN LCURLY statements RCURLY { $$ = new FnDefinitionNode($2, $4, $7); DBG(56, "FN identifier LPAREN fnParams RPAREN statementBlock"); }
         |
-            VAR identifier ASSIGN expression SEMICOL { $$ = new VarDeclarationNode($2, $4); DBG(57, "simpleStatement->VAR identifier ASSIGN expression SEMICOL"); }   
+            varDeclaration SEMICOL {$$ = $1; DBG(57, "simpleStatement->varDeclaration SEMICOL"); }
         |
             assignmentExpression SEMICOL { $$ = new AssignmentNode($1); DBG(11, "simpleStatement->assignmentExpression"); }   
         ;
+
+varDeclaration:
+        VAR identifier ASSIGN expression { $$ = new VarDeclarationNode($2, $4); DBG(57, "varDeclaration->VAR identifier ASSIGN expression SEMICOL"); }   
 
 fnParams:
             fnParams COMMA identifier { $$ = new FnParamsNode($1, $3); DBG(38, "fnParams->fnParams COMMA identifier"); }
@@ -194,6 +197,8 @@ assignmentExpression:
 
 preFor:
             assignmentExpression   { $$ = new PreFor($1); DBG(31, "preFor->assignmentExpression"); }
+        | 
+            varDeclaration { $$ = new PreFor($1); DBG(31, "preFor->varDeclaration"); }
         ;
 
 postFor:
