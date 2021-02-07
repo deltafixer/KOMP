@@ -102,8 +102,6 @@ expressionStatement:
         |
             arrayExpression SEMICOL { $$ = new ExpressionStatementNode($1); DBG(15, "expressionStatement->arrayExpression SEMICOL"); }
         |
-            arrayElementExpression SEMICOL { $$ = new ExpressionStatementNode($1); DBG(16, "expressionStatement->arrayElementExpression SEMICOL"); }
-        |
             SEMICOL { $$ = new EmptyStatementNode(); DBG(17, "expressionStatement->SEMICOL"); }
         ;
 
