@@ -39,6 +39,11 @@ class NegationLogicalExpressionNode;
 class RepeatUntilNode;
 class IncrIdentifierNode;
 class DifferenceLogicalExpression;
+class FnDefinitionNode;
+class FnCallNode;
+class FnParamsNode;
+class FnCallArgsNode;
+class ReturnStatementNode;
 
 class ASTNodeVisitor
 {
@@ -83,4 +88,9 @@ public:
     virtual void visit(RepeatUntilNode &node) = 0;
     virtual void visit(IncrIdentifierNode &node) = 0;
     virtual void visit(DifferenceLogicalExpression &node) = 0;
+    virtual void visit(FnDefinitionNode &node) = 0;
+    virtual void visit(FnCallNode &node) = 0;
+    virtual void visit(FnParamsNode &node) = 0;
+    virtual void visit(FnCallArgsNode &node) = 0;
+    virtual void visit(ReturnStatementNode &node) = 0;
 };

@@ -36,7 +36,7 @@ void DBG(int id, string msg) {
 %token LPAREN RPAREN LCURLY RCURLY SEMICOL COMMA
 %token ADD SUB OR MUL DIV AND XOR NOT INCR
 %token EQ GR GREQ LS LSEQ DIFF
-%token IF ELSE FOR PRINT WHILE REPEAT UNTIL
+%token IF ELSE FOR PRINT WHILE REPEAT UNTIL FN RETURN
 
 %precedence IFX
 %precedence ELSE
@@ -46,7 +46,7 @@ void DBG(int id, string msg) {
 %nonassoc NEG ASSIGN INCR
 %left EQ DIFF
 
-%type<node> program statements statement statementBlock simpleStatement expressionStatement expression 
+%type<node> program statements statement statementBlock simpleStatement expressionStatement expression fnParams fnCallArgs
 %type<node> numericalExpression logicalExpression assignmentExpression preFor postFor 
 %type<node> identifier constant
 
@@ -94,7 +94,19 @@ simpleStatement:
         |
             REPEAT statement UNTIL logicalExpression SEMICOL { $$ = new RepeatUntilNode($2, $4); DBG(56, "simpleStatement->REPEAT statementBlock UNTIL expression SEMICOL"); }
         |
+            RETURN expressionStatement { $$ = new ReturnStatementNode($2); DBG(58, "statement->RETURN expressionStatement"); }
+        |
+            FN identifier LPAREN fnParams RPAREN LCURLY statements RCURLY { $$ = new FnDefinitionNode($2, $4, $7); DBG(56, "FN identifier LPAREN fnParams RPAREN statementBlock"); }
+        |
             assignmentExpression SEMICOL { $$ = new AssignmentNode($1); DBG(11, "simpleStatement->assignmentExpression"); }   
+        ;
+
+fnParams:
+            fnParams COMMA identifier { $$ = new FnParamsNode($1, $3); DBG(38, "fnParams->fnParams COMMA identifier"); }
+        |
+            identifier                { $$ = new FnParamsNode($1); DBG(38, "fnParams->epsilon"); }
+        |
+            %empty                    { $$ = new FnParamsNode(); DBG(38, "fnParams->epsilon"); }
         ;
 
 expressionStatement:
@@ -126,6 +138,8 @@ numericalExpression:
         |
             identifier INCR { $$ = new IncrIdentifierNode($1);  DBG(57, "identifier INCR"); }
         |
+            identifier LPAREN fnCallArgs RPAREN { $$ = new FnCallNode($1, $3); DBG(60, "numericalExpression->identifier LPAREN fnCallArgs RPAREN"); }
+        |
             constant { $$ = $1;  DBG(37, "numericalExpression->identifier");  }
         ;
 
@@ -136,6 +150,14 @@ identifier:
 constant:   INTEGER { $$ = new IntegerNode($1); DBG(23, "numericalExpression->INTEGER"); }
         |
             FLOAT { $$ = new FloatNode($1); DBG(24, "numericalExpression->FLOAT"); }
+        ;
+
+fnCallArgs:
+            fnCallArgs COMMA expression { $$ = new FnCallArgsNode($1, $3); DBG(40, "fnCallArgs->fnCallArgs COMMA expression"); }
+        |
+            expression { $$ = new FnCallArgsNode($1); DBG(40, "fnCallArgs->expression"); }
+        |
+            %empty { $$ = new FnCallArgsNode(); DBG(40, "fnCallArgs->epsilon"); }
         ;
 
 logicalExpression:
@@ -158,9 +180,9 @@ logicalExpression:
             numericalExpression GREQ numericalExpression { $$ = new GreaterEqualLogicalExpression($1, $3); DBG(35, "logicalExpression->numericalExpression GREQ numericalExpression"); }
         |
             numericalExpression EQ numericalExpression { $$ = new EqualLogicalExpression($1, $3); DBG(35, "logicalExpression->numericalExpression EQ numericalExpression"); }
-        |   
+        |
             numericalExpression DIFF numericalExpression { $$ = new DifferenceLogicalExpression($1, $3); DBG(35, "logicalExpression->numericalExpression DIFF numericalExpression"); }
-        |   
+        |
             logicalExpression DIFF logicalExpression { $$ = new DifferenceLogicalExpression($1, $3); DBG(35, "logicalExpression->logicalExpression DIFF logicalExpression"); }
         ;
 

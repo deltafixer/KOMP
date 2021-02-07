@@ -255,6 +255,21 @@ public:
         node.getChild(0).accept(*this);
         m_out << "\tNOT" << endl;
     }
+    virtual void visit(FnDefinitionNode &node)
+    {
+    }
+    virtual void visit(FnCallNode &node)
+    {
+    }
+    virtual void visit(FnParamsNode &node)
+    {
+    }
+    virtual void visit(FnCallArgsNode &node)
+    {
+    }
+    virtual void visit(ReturnStatementNode &node)
+    {
+    }
 
 protected:
     unordered_map<string, int> m_name2id;
