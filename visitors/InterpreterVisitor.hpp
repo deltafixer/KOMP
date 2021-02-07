@@ -53,8 +53,7 @@ public:
 
     void addValueToIndex(int value, int index)
     {
-        auto indexPtr = array.begin() + index;
-        array.insert(indexPtr, value);
+        array[index] = value;
     }
 
     int getValue(int index)
@@ -159,24 +158,18 @@ public:
     }
     virtual void visit(AssignmentExpressionNode &node)
     {
-        // this case is: identifier ASSIGN array
-        IdentifierNode *nodeToIdentifierNode = dynamic_cast<IdentifierNode *>(&node.getChild(1));
-        if (nodeToIdentifierNode)
-        {
-            m_idToValue[((IdentifierNode &)node.getChild(0)).id()] = m_idToValue[nodeToIdentifierNode->id()];
-            m_idToValue.erase(nodeToIdentifierNode->id());
-        }
-        // this case is: identifier LSQUAREBR numericalExpression RSQUAREBR ASSIGN numericalExpression
-        else if (node.numChildren() == 3)
+        // // this case is: identifier LSQUAREBR numericalExpression RSQUAREBR ASSIGN numericalExpression
+        if (node.numChildren() == 3)
         {
             node.getChild(1).accept(*this);
             int index = ((Integer *)m_results.back())->getNumber();
             m_results.pop_back();
             node.getChild(2).accept(*this);
             int value = ((Integer *)m_results.back())->getNumber();
-            ((Array *)m_idToValue[((IdentifierNode &)node).id()])->addValueToIndex(index, value);
+
+            ((Array *)m_idToValue[((IdentifierNode &)node.getChild(0)).id()])->addValueToIndex(value, index);
         }
-        // basic case: identifier ASSIGN expression
+        // this case is: identifier ASSIGN array | identifier ASSIGN expression
         else
         {
             node.getChild(1).accept(*this);

@@ -111,6 +111,8 @@ expression:
             numericalExpression { $$ = $1; DBG(18, "expression->numericalExpression"); }
         |
             logicalExpression { $$ = $1; DBG(19, "expression->logicalExpression"); }
+        |
+            arrayElementExpression { $$ = $1; DBG(1999, "expression->arrayElementExpression"); }
         ;
 
 arrayElementExpression:
