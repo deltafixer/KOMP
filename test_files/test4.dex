@@ -1,0 +1,18 @@
+a = 1000;
+b = 2000;
+
+fn test(c, d) {
+    c = c + 2000;
+
+    print c;
+    print a;
+
+    if(d > 100) {
+        return d;
+    }
+
+    return c;
+}
+
+c = test(a, b);
+print c;
