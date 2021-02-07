@@ -464,14 +464,21 @@ public:
             throw new runtime_error("Wrong number of arguments");
         }
 
-        create_new_context();
+        unordered_map<string, int> param_to_arg;
+
         for (int i = 0; i < params_num; ++i)
         {
             args.getChild(i).accept(*this);
             int res = m_results.back();
             m_results.pop_back();
             string param_id = ((IdentifierNode &)params.getChild(i)).id();
-            m_context->set_value(param_id, res);
+            param_to_arg[param_id] = res;
+        }
+
+        create_new_context();
+        for (auto it = param_to_arg.begin(); it != param_to_arg.end(); it++)
+        {
+            m_context->set_value(it->first, it->second);
         }
 
         m_in_function = true;
