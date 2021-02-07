@@ -2,16 +2,89 @@
 #include "../ast/all.hpp"
 
 #include <deque>
+#include <optional>
 
 using namespace std;
 
 extern FILE *yyout;
 
+class Context
+{
+protected:
+    unordered_map<string, int> m_idToValue;
+    unordered_map<string, FnDefinitionNode *> m_functions;
+
+    Context *parent;
+
+public:
+    Context()
+    {
+        parent = nullptr;
+    }
+
+    Context(Context *parent)
+    {
+        this->parent = parent;
+    }
+
+    Context *get_parent()
+    {
+        return parent;
+    }
+
+    optional<int> get_value(const string &id)
+    {
+        if (m_idToValue.find(id) == m_idToValue.end())
+        {
+            if (parent != nullptr)
+            {
+                return parent->get_value(id);
+            }
+
+            return {};
+        }
+
+        return m_idToValue[id];
+    }
+
+    void set_value(const string &id, int value)
+    {
+        m_idToValue[id] = value;
+    }
+
+    optional<FnDefinitionNode *> get_function(const string &name)
+    {
+        if (m_functions.find(name) == m_functions.end())
+        {
+            if (parent != nullptr)
+            {
+                return parent->get_function(name);
+            }
+
+            return {};
+        }
+
+        return m_functions[name];
+    }
+
+    void set_function(const string &name, FnDefinitionNode *fn)
+    {
+        m_functions[name] = fn;
+    }
+};
+
 class InterpreterVisitor : public ASTNodeVisitor
 {
 public:
-    InterpreterVisitor() {}
-    virtual ~InterpreterVisitor() {}
+    InterpreterVisitor()
+    {
+        m_context = new Context();
+    }
+
+    virtual ~InterpreterVisitor()
+    {
+        delete m_context;
+    }
 
     virtual void visit(DifferenceLogicalExpression &node)
     {
@@ -25,7 +98,9 @@ public:
     }
     virtual void visit(IncrIdentifierNode &node)
     {
-        int old = m_idToValue[((IdentifierNode &)node.getChild(0)).id()]++;
+        string id = ((IdentifierNode &)node.getChild(0)).id();
+        int old = get_value_or_throw(id);
+        m_context->set_value(id, old + 1);
         m_results.push_back(old);
     }
     virtual void visit(RepeatUntilNode &node)
@@ -74,7 +149,8 @@ public:
     virtual void visit(AssignmentExpressionNode &node)
     {
         node.getChild(1).accept(*this);
-        m_idToValue[((IdentifierNode &)node.getChild(0)).id()] = m_results.back();
+        string id = ((IdentifierNode &)node.getChild(0)).id();
+        m_context->set_value(id, m_results.back());
     }
     virtual void visit(DivNumericalExpressionNode &node)
     {
@@ -112,7 +188,9 @@ public:
     }
     virtual void visit(IdentifierExpressionNode &node)
     {
-        m_results.push_back(m_idToValue[((IdentifierNode &)node.getChild(0)).id()]);
+        string id = ((IdentifierNode &)node.getChild(0)).id();
+        int val = get_value_or_throw(id);
+        m_results.push_back(val);
     }
     virtual void visit(IdentifierNode &node) {}
     virtual void visit(IfElseNode &node)
@@ -193,7 +271,9 @@ public:
     }
     virtual void visit(StatementBlockNode &node)
     {
+        create_new_context();
         node.getChild(0).accept(*this);
+        restore_parent_context();
     }
     virtual void visit(StatementNode &node)
     {
@@ -315,6 +395,43 @@ public:
     }
 
 protected:
-    unordered_map<string, int> m_idToValue;
+    Context *m_context;
     deque<int> m_results;
+
+    void create_new_context()
+    {
+        m_context = new Context(m_context);
+    }
+
+    void restore_parent_context()
+    {
+        Context *outer = m_context;
+        m_context = m_context->get_parent();
+        delete outer;
+    }
+
+    int get_value_or_throw(const string &id)
+    {
+        auto val = m_context->get_value(id);
+
+        if (!val)
+        {
+            cout << "Variable with identifier '" << id << "' not found";
+            throw new runtime_error("Identifier not found");
+        }
+
+        return *val;
+    }
+
+    FnDefinitionNode *get_function_or_throw(const string &name)
+    {
+        optional<FnDefinitionNode *> fn = m_context->get_function(name);
+        if (!fn)
+        {
+            cout << "Function with name '" << name << "' not found in current scope" << endl;
+            throw new runtime_error("Function with name '" + name + "' not found in current scope");
+        }
+
+        return *fn;
+    }
 };
