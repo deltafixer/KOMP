@@ -358,11 +358,8 @@ public:
         }
         else if (firstInteger && secondInteger)
         {
-            int lVal = ((Integer *)m_results.back())->getNumber();
-            m_results.pop_back();
-            node.getChild(1).accept(*this);
-            int rVal = ((Integer *)m_results.back())->getNumber();
-            m_results.pop_back();
+            int lVal = firstInteger->getNumber();
+            int rVal = secondInteger->getNumber();
             m_results.push_back(new Integer(lVal / rVal));
         }
         else
@@ -525,11 +522,8 @@ public:
         }
         else if (firstInteger && secondInteger)
         {
-            int lVal = ((Integer *)m_results.back())->getNumber();
-            m_results.pop_back();
-            node.getChild(1).accept(*this);
-            int rVal = ((Integer *)m_results.back())->getNumber();
-            m_results.pop_back();
+            int lVal = firstInteger->getNumber();
+            int rVal = secondInteger->getNumber();
             m_results.push_back(new Integer(lVal * rVal));
         }
         else
@@ -690,11 +684,8 @@ public:
         }
         else if (firstInteger && secondInteger)
         {
-            int lVal = ((Integer *)m_results.back())->getNumber();
-            m_results.pop_back();
-            node.getChild(1).accept(*this);
-            int rVal = ((Integer *)m_results.back())->getNumber();
-            m_results.pop_back();
+            int lVal = firstInteger->getNumber();
+            int rVal = secondInteger->getNumber();
             m_results.push_back(new Integer(lVal - rVal));
         }
         else
