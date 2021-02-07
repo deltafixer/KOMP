@@ -1,5 +1,6 @@
 
 #include "../ast/all.hpp"
+#include "Return.hpp"
 
 #include <deque>
 #include <optional>
@@ -413,7 +414,17 @@ public:
         }
 
         m_in_function = true;
-        fn->getChild(2).accept(*this);
+        try
+        {
+            fn->getChild(2).accept(*this);
+        }
+        catch (Return *ret)
+        {
+            if (ret->result)
+            {
+                m_results.push_back(*(ret->result));
+            }
+        }
         restore_parent_context();
         m_in_function = were_in_function;
     }
