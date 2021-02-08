@@ -309,7 +309,7 @@ int main() {
 
     printf("Starting parser...\n");
     yyin = stdin;
-    test_case(strcat(cwd, "/test_files/test.dex"));
+    test_case(strcat(cwd, "/test_files/test7.dex"));
     
     //yyparse();
 

@@ -10,6 +10,12 @@ using namespace std;
 
 extern FILE *yyout;
 
+void showAndThrowError(string message)
+{
+    cout << "ERROR: " << message << endl;
+    throw new runtime_error("ERROR: " + message);
+}
+
 class Object
 {
 public:
@@ -67,8 +73,7 @@ public:
 
         if (!val)
         {
-            cout << "Variable with identifier '" << id << "' not found" << endl;
-            throw new runtime_error("Identifier not found");
+            showAndThrowError("Variable with identifier '" + id + "' not found");
         }
 
         return *val;
@@ -100,8 +105,7 @@ public:
         bool exists = update_value(id, newValue);
         if (!exists)
         {
-            cout << "Variable with identifier '" << id << "' not found" << endl;
-            throw new runtime_error("Identifier not found");
+            showAndThrowError("Variable with identifier '" + id + "' not found");
         }
     }
 
@@ -125,8 +129,7 @@ public:
         optional<FnDefinitionNode *> fn = get_function(name);
         if (!fn)
         {
-            cout << "Function with name '" << name << "' not found in current scope" << endl;
-            throw new runtime_error("Function with name '" + name + "' not found in current scope");
+            showAndThrowError("Function with name '" + name + "' not found in current scope");
         }
 
         return *fn;
@@ -226,12 +229,6 @@ public:
         {
             delete *it;
         }
-    }
-
-    void showAndThrowError(string message)
-    {
-        cout << "ERROR: " << message << endl;
-        throw new runtime_error("ERROR: " + message);
     }
 
     virtual void visit(AddExpressionNode &node)
@@ -734,8 +731,7 @@ public:
 
         if (params_num != args_num)
         {
-            cout << "Function with name " << fnName << " expects " << params_num << " arguments, but " << args_num << " passed" << endl;
-            throw new runtime_error("Wrong number of arguments");
+            showAndThrowError("Function with name " + fnName + " expects " + to_string(params_num) + " arguments, but " + to_string(args_num) + " passed");
         }
 
         unordered_map<string, Object *> param_to_arg;
@@ -797,8 +793,7 @@ public:
     {
         if (!m_in_function)
         {
-            cout << "Return must be used only inside a function" << endl;
-            throw new runtime_error("Return must be used only inside a function");
+            showAndThrowError("Return must be used only inside a function");
         }
 
         if (node.numChildren() == 1)
