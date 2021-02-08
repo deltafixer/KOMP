@@ -6,10 +6,16 @@
 
 using namespace std;
 
+enum OBJECT_TYPE
+{
+    ARRAY_TYPE,
+    INTEGER_TYPE
+};
+
 class PseudoAssemblerContext
 {
 protected:
-    unordered_map<string, int> m_nameToId;
+    unordered_map<string, pair<int, OBJECT_TYPE>> m_nameToId;
     unordered_map<string, string> m_nameToLabel;
 
     PseudoAssemblerContext *m_parent;
@@ -32,13 +38,13 @@ public:
         return m_parent;
     }
 
-    optional<int> get_id(const string &name)
+    optional<pair<int, OBJECT_TYPE>> get(const string &name)
     {
         if (m_nameToId.find(name) == m_nameToId.end())
         {
             if (m_parent != nullptr)
             {
-                return m_parent->get_id(name);
+                return m_parent->get(name);
             }
 
             return {};
@@ -47,9 +53,9 @@ public:
         return m_nameToId[name];
     }
 
-    int get_id_or_throw(const string &name)
+    pair<int, OBJECT_TYPE> get_or_throw(const string &name)
     {
-        auto id_opt = get_id(name);
+        auto id_opt = get(name);
         if (!id_opt)
         {
             cout << "\nCompile error: identifier '" << name << "' not found" << endl;
@@ -59,10 +65,11 @@ public:
         return *id_opt;
     }
 
-    int add(const string &name)
+    int add(const string &name, OBJECT_TYPE type)
     {
-        m_nameToId[name] = PseudoAssemblerContext::NEXT_ID++;
-        return m_nameToId[name];
+        m_nameToId[name].first = PseudoAssemblerContext::NEXT_ID++;
+        m_nameToId[name].second = type;
+        return m_nameToId[name].first;
     }
 
     void add_function(string name, string begin_label)
@@ -107,9 +114,27 @@ public:
 
     virtual void visit(AddExpressionNode &node)
     {
-        node.getChild(0).accept(*this);
-        node.getChild(1).accept(*this);
-        m_out << "\tADD" << endl;
+        OBJECT_TYPE firstType = m_context->get_or_throw(((IdentifierNode &)node.getChild(0).getChild(0)).id()).second;
+        OBJECT_TYPE secondType = m_context->get_or_throw(((IdentifierNode &)node.getChild(1).getChild(0)).id()).second;
+
+        if (firstType == OBJECT_TYPE::INTEGER_TYPE && secondType == OBJECT_TYPE::INTEGER_TYPE)
+        {
+            node.getChild(0).accept(*this);
+            node.getChild(1).accept(*this);
+            m_out << "\tADD" << endl;
+        }
+        else if (firstType == OBJECT_TYPE::ARRAY_TYPE && secondType == OBJECT_TYPE::ARRAY_TYPE)
+        {
+            m_out << "\tPUSH ID#" << m_context->get_or_throw(((IdentifierNode &)node.getChild(0).getChild(0)).id()).first << endl;
+            m_out << "\tPUSH ID#" << m_context->get_or_throw(((IdentifierNode &)node.getChild(1).getChild(0)).id()).first << endl;
+            m_out << "\tCPMEQ" << endl;
+
+            m_out << "\tJMPZERO HALT" << endl;
+
+            node.getChild(0).accept(*this);
+            node.getChild(1).accept(*this);
+            m_out << "\tADDARRAYS" << endl;
+        }
     }
     virtual void visit(AndLogicalExpressionNode &node)
     {
@@ -126,14 +151,14 @@ public:
         if (node.numChildren() == 3)
         {
             string name = ((IdentifierNode &)node.getChild(0)).id();
-            int id = m_context->get_id_or_throw(name);
+            int id = m_context->get_or_throw(name).first;
 
             node.getChild(1).accept(*this);
             m_out << "\tPOP INDEX" << endl;
             node.getChild(2).accept(*this);
             m_out << "\tPOP VALUE" << endl;
 
-            m_out << "\tPUSH" << id << endl;
+            m_out << "\tPUSH ID#" << id << endl;
             m_out << "\tPUSH INDEX" << endl;
             // imagine if 'id' is a pointer to the beginning of the array, adding to it, moves the pointer
             m_out << "\tADD " << endl;
@@ -144,9 +169,23 @@ public:
         // this case is: identifier ASSIGN array | identifier ASSIGN expression
         else
         {
-            node.getChild(1).accept(*this);
             string name = ((IdentifierNode &)node.getChild(0)).id();
-            m_out << "\tPOP ID#" << m_context->get_id_or_throw(name) << endl;
+            if (node.getChild(1).type() == "ArrayNode")
+            {
+                m_out << "\tALLOC " << node.getChild(1).numChildren() * 4 << endl;
+                for (int i = 0; i < node.getChild(1).numChildren(); ++i)
+                {
+                    node.getChild(1).getChild(i).accept(*this);
+                    m_out << "\tPUSH ID#" << m_context->get_or_throw(((IdentifierNode &)node.getChild(0).getChild(0)).id()).first << endl;
+                    m_out << "\tMOVE 4" << endl;
+                }
+                m_out << "\tPOP ID#" << m_context->add(name, OBJECT_TYPE::ARRAY_TYPE) << endl;
+            }
+            else
+            {
+                node.getChild(1).accept(*this);
+                m_out << "\tPOP ID#" << m_context->add(name, OBJECT_TYPE::INTEGER_TYPE) << endl;
+            }
         }
     }
     virtual void visit(AssignmentNode &node)
@@ -165,9 +204,27 @@ public:
     }
     virtual void visit(DivExpressionNode &node)
     {
-        node.getChild(0).accept(*this);
-        node.getChild(1).accept(*this);
-        m_out << "\tDIV" << endl;
+        OBJECT_TYPE firstType = m_context->get_or_throw(((IdentifierNode &)node.getChild(0).getChild(0)).id()).second;
+        OBJECT_TYPE secondType = m_context->get_or_throw(((IdentifierNode &)node.getChild(1).getChild(0)).id()).second;
+
+        if (firstType == OBJECT_TYPE::INTEGER_TYPE && secondType == OBJECT_TYPE::INTEGER_TYPE)
+        {
+            node.getChild(0).accept(*this);
+            node.getChild(1).accept(*this);
+            m_out << "\tDIV" << endl;
+        }
+        else if (firstType == OBJECT_TYPE::ARRAY_TYPE && secondType == OBJECT_TYPE::ARRAY_TYPE)
+        {
+            m_out << "\tPUSH ID#" << m_context->get_or_throw(((IdentifierNode &)node.getChild(0).getChild(0)).id()).first << endl;
+            m_out << "\tPUSH ID#" << m_context->get_or_throw(((IdentifierNode &)node.getChild(1).getChild(0)).id()).first << endl;
+            m_out << "\tCPMEQ" << endl;
+
+            m_out << "\tJMPZERO HALT";
+
+            node.getChild(0).accept(*this);
+            node.getChild(1).accept(*this);
+            m_out << "\tDIVARRAYS" << endl;
+        }
     }
     virtual void visit(EmptyStatementNode &node) {}
     virtual void visit(EqualLogicalExpression &node)
@@ -221,20 +278,17 @@ public:
     virtual void visit(IdentifierArrayNode &node)
     {
         string name = ((IdentifierNode &)node.getChild(0)).id();
-        int id = m_context->get_id_or_throw(name);
+        int id = m_context->get_or_throw(name).first;
 
         node.getChild(1).accept(*this);
-        m_out << "\tPOP INDEX" << endl;
-
-        m_out << "\tPUSH" << id << endl;
-        m_out << "\tPUSH INDEX" << endl;
+        m_out << "\tPUSH #ID" << id << endl;
         m_out << "\tADD " << endl;
-        // now pointing at: id.begin() + index
+        m_out << "\tREAD " << endl;
     }
     virtual void visit(IdentifierExpressionNode &node)
     {
         string name = ((IdentifierNode &)node.getChild(0)).id();
-        m_out << "\tPUSH ID#" << m_context->get_id_or_throw(name) << endl;
+        m_out << "\tPUSH ID#" << m_context->get_or_throw(name).first << endl;
     }
     virtual void visit(IdentifierNode &node) {}
     virtual void visit(IfElseNode &node)
@@ -263,7 +317,7 @@ public:
         string lblIncr = nextLabel("INCR_");
 
         string name = ((IdentifierNode &)node.getChild(0)).id();
-        int id = m_context->get_id_or_throw(name);
+        int id = m_context->get_or_throw(name).first;
 
         m_out << lblIncr << ":" << endl;
         m_out << "\tPUSH ID#" << id << endl;
@@ -294,9 +348,27 @@ public:
     }
     virtual void visit(MulExpressionNode &node)
     {
-        node.getChild(0).accept(*this);
-        node.getChild(1).accept(*this);
-        m_out << "\tMUL" << endl;
+        OBJECT_TYPE firstType = m_context->get_or_throw(((IdentifierNode &)node.getChild(0).getChild(0)).id()).second;
+        OBJECT_TYPE secondType = m_context->get_or_throw(((IdentifierNode &)node.getChild(1).getChild(0)).id()).second;
+
+        if (firstType == OBJECT_TYPE::INTEGER_TYPE && secondType == OBJECT_TYPE::INTEGER_TYPE)
+        {
+            node.getChild(0).accept(*this);
+            node.getChild(1).accept(*this);
+            m_out << "\tMUL" << endl;
+        }
+        else if (firstType == OBJECT_TYPE::ARRAY_TYPE && secondType == OBJECT_TYPE::ARRAY_TYPE)
+        {
+            m_out << "\tPUSH ID#" << m_context->get_or_throw(((IdentifierNode &)node.getChild(0).getChild(0)).id()).first << endl;
+            m_out << "\tPUSH ID#" << m_context->get_or_throw(((IdentifierNode &)node.getChild(1).getChild(0)).id()).first << endl;
+            m_out << "\tCPMEQ" << endl;
+
+            m_out << "\tJMPZERO HALT";
+
+            node.getChild(0).accept(*this);
+            node.getChild(1).accept(*this);
+            m_out << "\tMULARRAYS" << endl;
+        }
     }
     virtual void visit(NegationLogicalExpressionNode &node)
     {
@@ -372,9 +444,27 @@ public:
     }
     virtual void visit(SubExpressionNode &node)
     {
-        node.getChild(0).accept(*this);
-        node.getChild(1).accept(*this);
-        m_out << "\tSUB" << endl;
+        OBJECT_TYPE firstType = m_context->get_or_throw(((IdentifierNode &)node.getChild(0).getChild(0)).id()).second;
+        OBJECT_TYPE secondType = m_context->get_or_throw(((IdentifierNode &)node.getChild(1).getChild(0)).id()).second;
+
+        if (firstType == OBJECT_TYPE::INTEGER_TYPE && secondType == OBJECT_TYPE::INTEGER_TYPE)
+        {
+            node.getChild(0).accept(*this);
+            node.getChild(1).accept(*this);
+            m_out << "\tSUB" << endl;
+        }
+        else if (firstType == OBJECT_TYPE::ARRAY_TYPE && secondType == OBJECT_TYPE::ARRAY_TYPE)
+        {
+            m_out << "\tPUSH ID#" << m_context->get_or_throw(((IdentifierNode &)node.getChild(0).getChild(0)).id()).first << endl;
+            m_out << "\tPUSH ID#" << m_context->get_or_throw(((IdentifierNode &)node.getChild(1).getChild(0)).id()).first << endl;
+            m_out << "\tCPMEQ" << endl;
+
+            m_out << "\tJMPZERO HALT";
+
+            node.getChild(0).accept(*this);
+            node.getChild(1).accept(*this);
+            m_out << "\tSUBARRAYS" << endl;
+        }
     }
     virtual void visit(WhileNode &node)
     {
@@ -411,7 +501,8 @@ public:
         for (int i = 0; i < params.numChildren(); ++i)
         {
             string name = ((IdentifierNode &)params.getChild(i)).id();
-            m_out << "\tPOP ID#" << m_context->add(name) << endl;
+            // TODO: Danilo
+            m_out << "\tPOP ID#" << m_context->add(name, OBJECT_TYPE::INTEGER_TYPE) << endl;
         }
 
         node.getChild(2).accept(*this);
@@ -452,31 +543,30 @@ public:
     }
     virtual void visit(VarDeclarationNode &node)
     {
-        // this case is: identifier LSQUAREBR numericalExpression RSQUAREBR ASSIGN numericalExpression
-        if (node.numChildren() == 3)
+        string name = ((IdentifierNode &)node.getChild(0)).id();
+        if (node.getChild(1).type() == "ArrayNode")
         {
-            string name = ((IdentifierNode &)node.getChild(0)).id();
-            int id = m_context->add(name);
+            int numChildren = node.getChild(1).numChildren();
+            m_out << "\tALLOC " << (numChildren + 1) * 4 << endl;
+            int id = m_context->add(name, OBJECT_TYPE::ARRAY_TYPE);
+            m_out << "\tPOP ID#" << id << endl;
+            m_out << "\tPUSH " << numChildren << endl;
+            m_out << "\tPUSH ID#" << id << endl;
+            m_out << "\tWRITE" << endl;
 
-            node.getChild(1).accept(*this);
-            m_out << "\tPOP INDEX" << endl;
-            node.getChild(2).accept(*this);
-            m_out << "\tPOP VALUE" << endl;
-
-            m_out << "\tPUSH" << id << endl;
-            m_out << "\tPUSH INDEX" << endl;
-            // imagine if 'id' is a pointer to the beginning of the array, adding to it, moves the pointer
-            m_out << "\tADD " << endl;
-            m_out << "\tPUSH VALUE" << endl;
-            // at given position of array, replace value with new value
-            m_out << "\tREPLACE " << endl;
+            for (int i = 0; i < numChildren; ++i)
+            {
+                node.getChild(1).getChild(i).accept(*this);
+                m_out << "\tPUSH " << (i + 1) * 4 << endl;
+                m_out << "\tPUSH ID#" << id << endl;
+                m_out << "\tADD" << endl;
+                m_out << "\tWRITE" << endl;
+            }
         }
-        // this case is: identifier ASSIGN array | identifier ASSIGN expression
         else
         {
             node.getChild(1).accept(*this);
-            string name = ((IdentifierNode &)node.getChild(0)).id();
-            m_out << "\tPOP ID#" << m_context->add(name) << endl;
+            m_out << "\tPOP ID#" << m_context->add(name, OBJECT_TYPE::INTEGER_TYPE) << endl;
         }
     }
 
