@@ -452,9 +452,32 @@ public:
     }
     virtual void visit(VarDeclarationNode &node)
     {
-        node.getChild(1).accept(*this);
-        string name = ((IdentifierNode &)node.getChild(0)).id();
-        m_out << "\tPOP ID#" << m_context->add(name) << endl;
+        // this case is: identifier LSQUAREBR numericalExpression RSQUAREBR ASSIGN numericalExpression
+        if (node.numChildren() == 3)
+        {
+            string name = ((IdentifierNode &)node.getChild(0)).id();
+            int id = m_context->add(name);
+
+            node.getChild(1).accept(*this);
+            m_out << "\tPOP INDEX" << endl;
+            node.getChild(2).accept(*this);
+            m_out << "\tPOP VALUE" << endl;
+
+            m_out << "\tPUSH" << id << endl;
+            m_out << "\tPUSH INDEX" << endl;
+            // imagine if 'id' is a pointer to the beginning of the array, adding to it, moves the pointer
+            m_out << "\tADD " << endl;
+            m_out << "\tPUSH VALUE" << endl;
+            // at given position of array, replace value with new value
+            m_out << "\tREPLACE " << endl;
+        }
+        // this case is: identifier ASSIGN array | identifier ASSIGN expression
+        else
+        {
+            node.getChild(1).accept(*this);
+            string name = ((IdentifierNode &)node.getChild(0)).id();
+            m_out << "\tPOP ID#" << m_context->add(name) << endl;
+        }
     }
 
 protected:
