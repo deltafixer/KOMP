@@ -26,6 +26,7 @@ using namespace std;
 #include "FnCallArgsNode.hpp"
 #include "FnCallNode.hpp"
 #include "FnDefinitionNode.hpp"
+#include "FnParamNode.hpp"
 #include "FnParamsNode.hpp"
 #include "ForNode.hpp"
 #include "GreaterEqualLogicalExpression.hpp"

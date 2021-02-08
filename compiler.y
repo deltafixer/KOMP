@@ -56,7 +56,7 @@ program:
             statements {
                 root = new ProgramNode($1);
                 root->accept(InterpreterVisitor());
-                // root->accept(PseudoAssemblerVisitor());
+                root->accept(PseudoAssemblerVisitor());
                 //cout << "PRINTING ROOT:" << endl;
                 //root->toStream(cout);
                 DBG(1, "program->statements"); 
@@ -109,9 +109,13 @@ varDeclaration:
             VAR identifier ASSIGN arrayExpression { $$ = new VarDeclarationNode($2, $4); DBG(57, "varDeclaration->VAR identifier ASSIGN expression SEMICOL"); }   
 
 fnParams:
-            fnParams COMMA identifier { $$ = new FnParamsNode($1, $3); DBG(38, "fnParams->fnParams COMMA identifier"); }
+            fnParams COMMA identifier { $$ = new FnParamsNode($1, new FnIntParamNode($3)); DBG(38, "fnParams->fnParams COMMA identifier"); }
         |
-            identifier                { $$ = new FnParamsNode($1); DBG(38, "fnParams->epsilon"); }
+            fnParams COMMA identifier LSQUAREBR RSQUAREBR { $$ = new FnParamsNode($1, new FnArrayParamNode($3)); DBG(38, "fnParams->fnParams COMMA identifier LSQUAREBR RSQUAREBR"); }
+        |
+            identifier                { $$ = new FnParamsNode(new FnIntParamNode($1)); DBG(38, "fnParams->identifier"); }
+        |
+            identifier LSQUAREBR RSQUAREBR      { $$ = new FnParamsNode(new FnArrayParamNode($1)); DBG(38, "fnParams->identifier LSQUAREBR RSQUAREBR"); }
         |
             %empty                    { $$ = new FnParamsNode(); DBG(38, "fnParams->epsilon"); }
         ;

@@ -4,3 +4,4 @@ b[0] = 3;
 var d = b[1];
 var c = a + b;
 print(d);
+print(c);

@@ -500,9 +500,15 @@ public:
 
         for (int i = 0; i < params.numChildren(); ++i)
         {
-            string name = ((IdentifierNode &)params.getChild(i)).id();
-            // TODO: Danilo
-            m_out << "\tPOP ID#" << m_context->add(name, OBJECT_TYPE::INTEGER_TYPE) << endl;
+            string name = ((IdentifierNode &)params.getChild(i).getChild(0)).id();
+            if (auto intParam = dynamic_cast<FnIntParamNode *>(&params.getChild(i)))
+            {
+                m_out << "\tPOP ID#" << m_context->add(name, OBJECT_TYPE::INTEGER_TYPE) << endl;
+            }
+            else
+            {
+                m_out << "\tPOP ID#" << m_context->add(name, OBJECT_TYPE::ARRAY_TYPE) << endl;
+            }
         }
 
         node.getChild(2).accept(*this);
@@ -522,6 +528,10 @@ public:
         }
 
         m_out << "\tCALL " << m_context->get_function_label_or_throw(name) << endl;
+    }
+    virtual void visit(FnParamNode &node)
+    {
+        node.getChild(0).accept(*this);
     }
     virtual void visit(FnParamsNode &node)
     {

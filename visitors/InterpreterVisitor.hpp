@@ -745,8 +745,22 @@ public:
             args.getChild(i).accept(*this);
             Object *res = m_results.back();
             m_results.pop_back();
-            string param_id = ((IdentifierNode &)params.getChild(i)).id();
-            param_to_arg[param_id] = res;
+
+            string param_id = ((IdentifierNode &)params.getChild(i).getChild(0)).id();
+
+            auto int_param = dynamic_cast<FnIntParamNode *>(&params.getChild(i));
+            auto res_int = dynamic_cast<Integer *>(res);
+
+            auto array_param = dynamic_cast<FnArrayParamNode *>(&params.getChild(i));
+            auto res_array = dynamic_cast<Array *>(res);
+            if ((int_param && res_int) || (array_param && res_array))
+            {
+                param_to_arg[param_id] = res;
+            }
+            else
+            {
+                showAndThrowError("Function '" + fnName + "': Argument '" + param_id + "' passed to a function was of wrong type");
+            }
         }
 
         create_new_context();
@@ -769,6 +783,9 @@ public:
         }
         restore_parent_context();
         m_in_function = were_in_function;
+    }
+    virtual void visit(FnParamNode &node)
+    {
     }
     virtual void visit(FnParamsNode &node)
     {

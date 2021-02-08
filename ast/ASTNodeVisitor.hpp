@@ -19,6 +19,7 @@ class FnCallArgsNode;
 class FnCallNode;
 class FnDefinitionNode;
 class FnParamsNode;
+class FnParamNode;
 class ForNode;
 class GreaterEqualLogicalExpression;
 class GreaterLogicalExpression;
@@ -71,6 +72,7 @@ public:
     virtual void visit(FnCallArgsNode &node) = 0;
     virtual void visit(FnCallNode &node) = 0;
     virtual void visit(FnDefinitionNode &node) = 0;
+    virtual void visit(FnParamNode &node) = 0;
     virtual void visit(FnParamsNode &node) = 0;
     virtual void visit(ForNode &node) = 0;
     virtual void visit(GreaterEqualLogicalExpression &node) = 0;
