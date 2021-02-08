@@ -172,19 +172,27 @@ public:
             string name = ((IdentifierNode &)node.getChild(0)).id();
             if (node.getChild(1).type() == "ArrayNode")
             {
-                m_out << "\tALLOC " << node.getChild(1).numChildren() * 4 << endl;
-                for (int i = 0; i < node.getChild(1).numChildren(); ++i)
+                int numChildren = node.getChild(1).numChildren();
+                m_out << "\tALLOC " << (numChildren + 1) * 4 << endl;
+                int id = m_context->get_or_throw(name).first;
+                m_out << "\tPOP ID#" << id << endl;
+                m_out << "\tPUSH " << numChildren << endl;
+                m_out << "\tPUSH ID#" << id << endl;
+                m_out << "\tWRITE" << endl;
+
+                for (int i = 0; i < numChildren; ++i)
                 {
                     node.getChild(1).getChild(i).accept(*this);
-                    m_out << "\tPUSH ID#" << m_context->get_or_throw(((IdentifierNode &)node.getChild(0).getChild(0)).id()).first << endl;
-                    m_out << "\tMOVE 4" << endl;
+                    m_out << "\tPUSH " << (i + 1) * 4 << endl;
+                    m_out << "\tPUSH ID#" << id << endl;
+                    m_out << "\tADD" << endl;
+                    m_out << "\tWRITE" << endl;
                 }
-                m_out << "\tPOP ID#" << m_context->add(name, OBJECT_TYPE::ARRAY_TYPE) << endl;
             }
             else
             {
                 node.getChild(1).accept(*this);
-                m_out << "\tPOP ID#" << m_context->add(name, OBJECT_TYPE::INTEGER_TYPE) << endl;
+                m_out << "\tPOP ID#" << m_context->get_or_throw(name).first << endl;
             }
         }
     }
