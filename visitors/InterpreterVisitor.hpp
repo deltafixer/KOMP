@@ -47,18 +47,18 @@ public:
         this->m_parent = parent;
     }
 
-    Context *get_parent()
+    Context *getParent()
     {
         return m_parent;
     }
 
-    optional<Object *> get_value(const string &id)
+    optional<Object *> getValue(const string &id)
     {
         if (m_idToValue.find(id) == m_idToValue.end())
         {
             if (m_parent != nullptr)
             {
-                return m_parent->get_value(id);
+                return m_parent->getValue(id);
             }
 
             return {};
@@ -67,9 +67,9 @@ public:
         return m_idToValue[id];
     }
 
-    Object *get_value_or_throw(const string &id)
+    Object *getValueOrThrow(const string &id)
     {
-        auto val = get_value(id);
+        auto val = getValue(id);
 
         if (!val)
         {
@@ -79,18 +79,18 @@ public:
         return *val;
     }
 
-    void set_value(const string &id, Object *value)
+    void setValueOrThrow(const string &id, Object *value)
     {
         m_idToValue[id] = value;
     }
 
-    bool update_value(const string &id, Object *newValue)
+    bool updateValue(const string &id, Object *newValue)
     {
         if (m_idToValue.find(id) == m_idToValue.end())
         {
             if (m_parent != nullptr)
             {
-                return m_parent->update_value(id, newValue);
+                return m_parent->updateValue(id, newValue);
             }
 
             return false;
@@ -100,22 +100,22 @@ public:
         return true;
     }
 
-    void update_value_or_throw(const string &id, Object *newValue)
+    void updateValueOrThrow(const string &id, Object *newValue)
     {
-        bool exists = update_value(id, newValue);
+        bool exists = updateValue(id, newValue);
         if (!exists)
         {
             showAndThrowError("Variable with identifier '" + id + "' not found");
         }
     }
 
-    optional<FnDefinitionNode *> get_function(const string &name)
+    optional<FnDefinitionNode *> getFunction(const string &name)
     {
         if (m_functions.find(name) == m_functions.end())
         {
             if (m_parent != nullptr)
             {
-                return m_parent->get_function(name);
+                return m_parent->getFunction(name);
             }
 
             return {};
@@ -124,9 +124,9 @@ public:
         return m_functions[name];
     }
 
-    FnDefinitionNode *get_function_or_throw(const string &name)
+    FnDefinitionNode *getFunctionOrThrow(const string &name)
     {
-        optional<FnDefinitionNode *> fn = get_function(name);
+        optional<FnDefinitionNode *> fn = getFunction(name);
         if (!fn)
         {
             showAndThrowError("Function with name '" + name + "' not found in current scope");
@@ -135,7 +135,7 @@ public:
         return *fn;
     }
 
-    void set_function(const string &name, FnDefinitionNode *fn)
+    void setFunction(const string &name, FnDefinitionNode *fn)
     {
         m_functions[name] = fn;
     }
@@ -218,7 +218,7 @@ public:
     InterpreterVisitor()
     {
         m_context = new Context();
-        m_in_function = false;
+        m_inFunction = false;
     }
 
     virtual ~InterpreterVisitor()
@@ -301,14 +301,14 @@ public:
             node.getChild(2).accept(*this);
             int value = ((Integer *)m_results.back())->getNumber();
 
-            Array *arr = (Array *)m_context->get_value_or_throw(id);
+            Array *arr = (Array *)m_context->getValueOrThrow(id);
             arr->addValueToIndex(value, index);
         }
         // this case is: identifier ASSIGN array | identifier ASSIGN expression
         else
         {
             node.getChild(1).accept(*this);
-            m_context->update_value_or_throw(id, m_results.back());
+            m_context->updateValueOrThrow(id, m_results.back());
         }
     }
     virtual void visit(AssignmentNode &node)
@@ -385,7 +385,7 @@ public:
     }
     virtual void visit(ForNode &node)
     {
-        create_new_context();
+        createNewContext();
         try
         {
             node.getChild(0).accept(*this);
@@ -403,10 +403,10 @@ public:
         }
         catch (Return *r)
         {
-            restore_parent_context();
+            restoreParentContext();
             throw r;
         }
-        restore_parent_context();
+        restoreParentContext();
     }
     virtual void visit(GreaterEqualLogicalExpression &node)
     {
@@ -433,13 +433,13 @@ public:
         string id = ((IdentifierNode &)node.getChild(0)).id();
         node.getChild(1).accept(*this);
         int index = ((Integer *)m_results.back())->getNumber();
-        Array *arr = (Array *)m_context->get_value_or_throw(id);
+        Array *arr = (Array *)m_context->getValueOrThrow(id);
         m_results.push_back(new Integer(arr->getValue(index)));
     }
     virtual void visit(IdentifierExpressionNode &node)
     {
         string id = ((IdentifierNode &)node.getChild(0)).id();
-        m_results.push_back(m_context->get_value_or_throw(id));
+        m_results.push_back(m_context->getValueOrThrow(id));
     }
     virtual void visit(IdentifierNode &node) {}
     virtual void visit(IfElseNode &node)
@@ -463,8 +463,8 @@ public:
     virtual void visit(IncrIdentifierNode &node)
     {
         string id = ((IdentifierNode &)node.getChild(0)).id();
-        Integer *old = (Integer *)m_context->get_value_or_throw(id);
-        m_context->update_value(id, new Integer(old->getNumber() + 1));
+        Integer *old = (Integer *)m_context->getValueOrThrow(id);
+        m_context->updateValue(id, new Integer(old->getNumber() + 1));
 
         m_results.push_back(old);
     }
@@ -630,18 +630,18 @@ public:
     }
     virtual void visit(StatementBlockNode &node)
     {
-        create_new_context();
+        createNewContext();
         try
         {
             node.getChild(0).accept(*this);
         }
         catch (Return *ret)
         {
-            restore_parent_context();
+            restoreParentContext();
             throw ret;
         }
 
-        restore_parent_context();
+        restoreParentContext();
     }
     virtual void visit(StatementNode &node)
     {
@@ -715,57 +715,57 @@ public:
     virtual void visit(FnDefinitionNode &node)
     {
         string id = ((IdentifierNode &)node.getChild(0)).id();
-        m_context->set_function(id, &node);
+        m_context->setFunction(id, &node);
     }
     virtual void visit(FnCallNode &node)
     {
-        bool were_in_function = m_in_function;
+        bool wereInFunction = m_inFunction;
         string fnName = ((IdentifierNode &)node.getChild(0)).id();
-        FnDefinitionNode *fn = m_context->get_function_or_throw(fnName);
+        FnDefinitionNode *fn = m_context->getFunctionOrThrow(fnName);
 
         auto &params = fn->getChild(1);
         auto &args = node.getChild(1);
 
-        int params_num = params.numChildren();
-        int args_num = args.numChildren();
+        int paramsNum = params.numChildren();
+        int argsNum = args.numChildren();
 
-        if (params_num != args_num)
+        if (paramsNum != argsNum)
         {
-            showAndThrowError("Function with name " + fnName + " expects " + to_string(params_num) + " arguments, but " + to_string(args_num) + " passed");
+            showAndThrowError("Function with name " + fnName + " expects " + to_string(paramsNum) + " arguments, but " + to_string(argsNum) + " passed");
         }
 
-        unordered_map<string, Object *> param_to_arg;
+        unordered_map<string, Object *> paramToArg;
 
-        for (int i = 0; i < params_num; ++i)
+        for (int i = 0; i < paramsNum; ++i)
         {
             args.getChild(i).accept(*this);
             Object *res = m_results.back();
             m_results.pop_back();
 
-            string param_id = ((IdentifierNode &)params.getChild(i).getChild(0)).id();
+            string paramId = ((IdentifierNode &)params.getChild(i).getChild(0)).id();
 
-            auto int_param = dynamic_cast<FnIntParamNode *>(&params.getChild(i));
-            auto res_int = dynamic_cast<Integer *>(res);
+            auto intParam = dynamic_cast<FnIntParamNode *>(&params.getChild(i));
+            auto resInt = dynamic_cast<Integer *>(res);
 
-            auto array_param = dynamic_cast<FnArrayParamNode *>(&params.getChild(i));
-            auto res_array = dynamic_cast<Array *>(res);
-            if ((int_param && res_int) || (array_param && res_array))
+            auto arrayParam = dynamic_cast<FnArrayParamNode *>(&params.getChild(i));
+            auto resArray = dynamic_cast<Array *>(res);
+            if ((intParam && resInt) || (arrayParam && resArray))
             {
-                param_to_arg[param_id] = res;
+                paramToArg[paramId] = res;
             }
             else
             {
-                showAndThrowError("Function '" + fnName + "': Argument '" + param_id + "' passed to a function was of wrong type");
+                showAndThrowError("Function '" + fnName + "': Argument '" + paramId + "' passed to a function was of wrong type");
             }
         }
 
-        create_new_context();
-        for (auto it = param_to_arg.begin(); it != param_to_arg.end(); it++)
+        createNewContext();
+        for (auto it = paramToArg.begin(); it != paramToArg.end(); it++)
         {
-            m_context->set_value(it->first, it->second);
+            m_context->setValueOrThrow(it->first, it->second);
         }
 
-        m_in_function = true;
+        m_inFunction = true;
         try
         {
             fn->getChild(2).accept(*this);
@@ -777,8 +777,8 @@ public:
                 m_results.push_back(*(ret->result));
             }
         }
-        restore_parent_context();
-        m_in_function = were_in_function;
+        restoreParentContext();
+        m_inFunction = wereInFunction;
     }
     virtual void visit(FnParamNode &node)
     {
@@ -791,7 +791,7 @@ public:
     }
     virtual void visit(ReturnStatementNode &node)
     {
-        if (!m_in_function)
+        if (!m_inFunction)
         {
             showAndThrowError("Return must be used only inside a function");
         }
@@ -813,23 +813,23 @@ public:
         Object *res = m_results.back();
         m_results.pop_back();
 
-        m_context->set_value(id, res);
+        m_context->setValueOrThrow(id, res);
     }
 
 protected:
     Context *m_context;
     deque<Object *> m_results;
-    bool m_in_function;
+    bool m_inFunction;
 
-    void create_new_context()
+    void createNewContext()
     {
         m_context = new Context(m_context);
     }
 
-    void restore_parent_context()
+    void restoreParentContext()
     {
         Context *outer = m_context;
-        m_context = m_context->get_parent();
+        m_context = m_context->getParent();
         delete outer;
     }
 };

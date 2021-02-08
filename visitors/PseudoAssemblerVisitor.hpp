@@ -33,7 +33,7 @@ public:
         this->m_parent = parent;
     }
 
-    PseudoAssemblerContext *get_parent()
+    PseudoAssemblerContext *getParent()
     {
         return m_parent;
     }
@@ -53,7 +53,7 @@ public:
         return m_nameToId[name];
     }
 
-    pair<int, OBJECT_TYPE> get_or_throw(const string &name)
+    pair<int, OBJECT_TYPE> getOrThrow(const string &name)
     {
         auto id_opt = get(name);
         if (!id_opt)
@@ -72,18 +72,18 @@ public:
         return m_nameToId[name].first;
     }
 
-    void add_function(string name, string begin_label)
+    void addFunction(string name, string begin_label)
     {
         m_nameToLabel[name] = begin_label;
     }
 
-    optional<string> get_function_label(const string &name)
+    optional<string> getFunctionLabel(const string &name)
     {
         if (m_nameToLabel.find(name) == m_nameToLabel.end())
         {
             if (m_parent != nullptr)
             {
-                return m_parent->get_function_label(name);
+                return m_parent->getFunctionLabel(name);
             }
 
             return {};
@@ -92,9 +92,9 @@ public:
         return m_nameToLabel[name];
     }
 
-    string get_function_label_or_throw(const string &name)
+    string getFunctionLabelOrThrow(const string &name)
     {
-        auto label_opt = get_function_label(name);
+        auto label_opt = getFunctionLabel(name);
         if (!label_opt)
         {
             cout << "\nCompile error: function '" << name << "' not found" << endl;
@@ -114,8 +114,8 @@ public:
 
     virtual void visit(AddExpressionNode &node)
     {
-        OBJECT_TYPE firstType = m_context->get_or_throw(((IdentifierNode &)node.getChild(0).getChild(0)).id()).second;
-        OBJECT_TYPE secondType = m_context->get_or_throw(((IdentifierNode &)node.getChild(1).getChild(0)).id()).second;
+        OBJECT_TYPE firstType = m_context->getOrThrow(((IdentifierNode &)node.getChild(0).getChild(0)).id()).second;
+        OBJECT_TYPE secondType = m_context->getOrThrow(((IdentifierNode &)node.getChild(1).getChild(0)).id()).second;
 
         if (firstType == OBJECT_TYPE::INTEGER_TYPE && secondType == OBJECT_TYPE::INTEGER_TYPE)
         {
@@ -125,8 +125,8 @@ public:
         }
         else if (firstType == OBJECT_TYPE::ARRAY_TYPE && secondType == OBJECT_TYPE::ARRAY_TYPE)
         {
-            m_out << "\tPUSH ID#" << m_context->get_or_throw(((IdentifierNode &)node.getChild(0).getChild(0)).id()).first << endl;
-            m_out << "\tPUSH ID#" << m_context->get_or_throw(((IdentifierNode &)node.getChild(1).getChild(0)).id()).first << endl;
+            m_out << "\tPUSH ID#" << m_context->getOrThrow(((IdentifierNode &)node.getChild(0).getChild(0)).id()).first << endl;
+            m_out << "\tPUSH ID#" << m_context->getOrThrow(((IdentifierNode &)node.getChild(1).getChild(0)).id()).first << endl;
             m_out << "\tCPMEQ" << endl;
 
             m_out << "\tJMPZERO HALT" << endl;
@@ -151,7 +151,7 @@ public:
         if (node.numChildren() == 3)
         {
             string name = ((IdentifierNode &)node.getChild(0)).id();
-            int id = m_context->get_or_throw(name).first;
+            int id = m_context->getOrThrow(name).first;
 
             node.getChild(1).accept(*this);
             m_out << "\tPOP INDEX" << endl;
@@ -174,7 +174,7 @@ public:
             {
                 int numChildren = node.getChild(1).numChildren();
                 m_out << "\tALLOC " << (numChildren + 1) * 4 << endl;
-                int id = m_context->get_or_throw(name).first;
+                int id = m_context->getOrThrow(name).first;
                 m_out << "\tPOP ID#" << id << endl;
                 m_out << "\tPUSH " << numChildren << endl;
                 m_out << "\tPUSH ID#" << id << endl;
@@ -192,7 +192,7 @@ public:
             else
             {
                 node.getChild(1).accept(*this);
-                m_out << "\tPOP ID#" << m_context->get_or_throw(name).first << endl;
+                m_out << "\tPOP ID#" << m_context->getOrThrow(name).first << endl;
             }
         }
     }
@@ -212,8 +212,8 @@ public:
     }
     virtual void visit(DivExpressionNode &node)
     {
-        OBJECT_TYPE firstType = m_context->get_or_throw(((IdentifierNode &)node.getChild(0).getChild(0)).id()).second;
-        OBJECT_TYPE secondType = m_context->get_or_throw(((IdentifierNode &)node.getChild(1).getChild(0)).id()).second;
+        OBJECT_TYPE firstType = m_context->getOrThrow(((IdentifierNode &)node.getChild(0).getChild(0)).id()).second;
+        OBJECT_TYPE secondType = m_context->getOrThrow(((IdentifierNode &)node.getChild(1).getChild(0)).id()).second;
 
         if (firstType == OBJECT_TYPE::INTEGER_TYPE && secondType == OBJECT_TYPE::INTEGER_TYPE)
         {
@@ -223,8 +223,8 @@ public:
         }
         else if (firstType == OBJECT_TYPE::ARRAY_TYPE && secondType == OBJECT_TYPE::ARRAY_TYPE)
         {
-            m_out << "\tPUSH ID#" << m_context->get_or_throw(((IdentifierNode &)node.getChild(0).getChild(0)).id()).first << endl;
-            m_out << "\tPUSH ID#" << m_context->get_or_throw(((IdentifierNode &)node.getChild(1).getChild(0)).id()).first << endl;
+            m_out << "\tPUSH ID#" << m_context->getOrThrow(((IdentifierNode &)node.getChild(0).getChild(0)).id()).first << endl;
+            m_out << "\tPUSH ID#" << m_context->getOrThrow(((IdentifierNode &)node.getChild(1).getChild(0)).id()).first << endl;
             m_out << "\tCPMEQ" << endl;
 
             m_out << "\tJMPZERO HALT";
@@ -286,7 +286,7 @@ public:
     virtual void visit(IdentifierArrayNode &node)
     {
         string name = ((IdentifierNode &)node.getChild(0)).id();
-        int id = m_context->get_or_throw(name).first;
+        int id = m_context->getOrThrow(name).first;
 
         node.getChild(1).accept(*this);
         m_out << "\tPUSH #ID" << id << endl;
@@ -296,7 +296,7 @@ public:
     virtual void visit(IdentifierExpressionNode &node)
     {
         string name = ((IdentifierNode &)node.getChild(0)).id();
-        m_out << "\tPUSH ID#" << m_context->get_or_throw(name).first << endl;
+        m_out << "\tPUSH ID#" << m_context->getOrThrow(name).first << endl;
     }
     virtual void visit(IdentifierNode &node) {}
     virtual void visit(IfElseNode &node)
@@ -325,7 +325,7 @@ public:
         string lblIncr = nextLabel("INCR_");
 
         string name = ((IdentifierNode &)node.getChild(0)).id();
-        int id = m_context->get_or_throw(name).first;
+        int id = m_context->getOrThrow(name).first;
 
         m_out << lblIncr << ":" << endl;
         m_out << "\tPUSH ID#" << id << endl;
@@ -356,8 +356,8 @@ public:
     }
     virtual void visit(MulExpressionNode &node)
     {
-        OBJECT_TYPE firstType = m_context->get_or_throw(((IdentifierNode &)node.getChild(0).getChild(0)).id()).second;
-        OBJECT_TYPE secondType = m_context->get_or_throw(((IdentifierNode &)node.getChild(1).getChild(0)).id()).second;
+        OBJECT_TYPE firstType = m_context->getOrThrow(((IdentifierNode &)node.getChild(0).getChild(0)).id()).second;
+        OBJECT_TYPE secondType = m_context->getOrThrow(((IdentifierNode &)node.getChild(1).getChild(0)).id()).second;
 
         if (firstType == OBJECT_TYPE::INTEGER_TYPE && secondType == OBJECT_TYPE::INTEGER_TYPE)
         {
@@ -367,8 +367,8 @@ public:
         }
         else if (firstType == OBJECT_TYPE::ARRAY_TYPE && secondType == OBJECT_TYPE::ARRAY_TYPE)
         {
-            m_out << "\tPUSH ID#" << m_context->get_or_throw(((IdentifierNode &)node.getChild(0).getChild(0)).id()).first << endl;
-            m_out << "\tPUSH ID#" << m_context->get_or_throw(((IdentifierNode &)node.getChild(1).getChild(0)).id()).first << endl;
+            m_out << "\tPUSH ID#" << m_context->getOrThrow(((IdentifierNode &)node.getChild(0).getChild(0)).id()).first << endl;
+            m_out << "\tPUSH ID#" << m_context->getOrThrow(((IdentifierNode &)node.getChild(1).getChild(0)).id()).first << endl;
             m_out << "\tCPMEQ" << endl;
 
             m_out << "\tJMPZERO HALT";
@@ -452,8 +452,8 @@ public:
     }
     virtual void visit(SubExpressionNode &node)
     {
-        OBJECT_TYPE firstType = m_context->get_or_throw(((IdentifierNode &)node.getChild(0).getChild(0)).id()).second;
-        OBJECT_TYPE secondType = m_context->get_or_throw(((IdentifierNode &)node.getChild(1).getChild(0)).id()).second;
+        OBJECT_TYPE firstType = m_context->getOrThrow(((IdentifierNode &)node.getChild(0).getChild(0)).id()).second;
+        OBJECT_TYPE secondType = m_context->getOrThrow(((IdentifierNode &)node.getChild(1).getChild(0)).id()).second;
 
         if (firstType == OBJECT_TYPE::INTEGER_TYPE && secondType == OBJECT_TYPE::INTEGER_TYPE)
         {
@@ -463,8 +463,8 @@ public:
         }
         else if (firstType == OBJECT_TYPE::ARRAY_TYPE && secondType == OBJECT_TYPE::ARRAY_TYPE)
         {
-            m_out << "\tPUSH ID#" << m_context->get_or_throw(((IdentifierNode &)node.getChild(0).getChild(0)).id()).first << endl;
-            m_out << "\tPUSH ID#" << m_context->get_or_throw(((IdentifierNode &)node.getChild(1).getChild(0)).id()).first << endl;
+            m_out << "\tPUSH ID#" << m_context->getOrThrow(((IdentifierNode &)node.getChild(0).getChild(0)).id()).first << endl;
+            m_out << "\tPUSH ID#" << m_context->getOrThrow(((IdentifierNode &)node.getChild(1).getChild(0)).id()).first << endl;
             m_out << "\tCPMEQ" << endl;
 
             m_out << "\tJMPZERO HALT";
@@ -497,7 +497,7 @@ public:
         string lblBegin = nextLabel(name + "_BEGIN_");
         string lblEnd = nextLabel(name + "_END_");
 
-        m_context->add_function(name, lblBegin);
+        m_context->addFunction(name, lblBegin);
 
         create_new_context();
         m_out << "\tJMP " << lblEnd << endl;
@@ -535,7 +535,7 @@ public:
             args.getChild(i).accept(*this);
         }
 
-        m_out << "\tCALL " << m_context->get_function_label_or_throw(name) << endl;
+        m_out << "\tCALL " << m_context->getFunctionLabelOrThrow(name) << endl;
     }
     virtual void visit(FnParamNode &node)
     {
@@ -608,7 +608,7 @@ protected:
     void restore_parent_context()
     {
         PseudoAssemblerContext *outer = m_context;
-        m_context = m_context->get_parent();
+        m_context = m_context->getParent();
         delete outer;
     }
 };
