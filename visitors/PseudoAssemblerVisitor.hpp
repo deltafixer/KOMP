@@ -258,7 +258,7 @@ public:
     }
     virtual void visit(ForNode &node)
     {
-        create_new_context();
+        createNewContext();
         node.getChild(0).accept(*this);
         string lblCond = nextLabel("FOR_COND_");
         string lblEnd = nextLabel("FOR_END_");
@@ -269,7 +269,7 @@ public:
         node.getChild(2).accept(*this);
         m_out << "\tJMP " << lblCond << endl;
         m_out << lblEnd << ":" << endl;
-        restore_parent_context();
+        restoreParentContext();
     }
     virtual void visit(GreaterEqualLogicalExpression &node)
     {
@@ -435,9 +435,9 @@ public:
     }
     virtual void visit(StatementBlockNode &node)
     {
-        create_new_context();
+        createNewContext();
         node.getChild(0).accept(*this);
-        restore_parent_context();
+        restoreParentContext();
     }
     virtual void visit(StatementNode &node)
     {
@@ -499,7 +499,7 @@ public:
 
         m_context->addFunction(name, lblBegin);
 
-        create_new_context();
+        createNewContext();
         m_out << "\tJMP " << lblEnd << endl;
 
         m_out << lblBegin << ":" << endl;
@@ -523,7 +523,7 @@ public:
 
         m_out << "\tRET0" << endl; // in case return statement doesn't appear in function body
         m_out << lblEnd << ":" << endl;
-        restore_parent_context();
+        restoreParentContext();
     }
     virtual void visit(FnCallNode &node)
     {
@@ -600,12 +600,12 @@ protected:
         return out.str();
     }
 
-    void create_new_context()
+    void createNewContext()
     {
         m_context = new PseudoAssemblerContext(m_context);
     }
 
-    void restore_parent_context()
+    void restoreParentContext()
     {
         PseudoAssemblerContext *outer = m_context;
         m_context = m_context->getParent();
