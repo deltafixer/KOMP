@@ -183,6 +183,7 @@ arrayExpression:
         |
             array { $$ = $1; DBG(39, "arrayExpression->LPAREN array RPAREN"); }
         ;
+
 identifier: 
             IDENTIFIER { $$ = new IdentifierNode($1); DBG(40, "identifier->IDENTIFIER"); }
         ;
@@ -304,7 +305,7 @@ int main() {
 
     printf("Starting parser...\n");
     yyin = stdin;
-    test_case(strcat(cwd, "/test_files/test7.dex"));
+    test_case(strcat(cwd, "/test_files/test.dex"));
     
     //yyparse();
 
