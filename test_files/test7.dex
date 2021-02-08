@@ -15,3 +15,6 @@ var i1 = 1;
 var i2 = 4;
 var i_res = add_two_ints(i1, i2);
 print i_res;
+i1 = [1, 2, 3];
+
+print add_two_arrays(i1, a1);
