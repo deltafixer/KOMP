@@ -5,7 +5,6 @@
 class IdentifierNode : public ASTNode
 {
 public:
-    IdentifierNode(const char *idName) : ASTNode("IdentifierNode"), m_id(string(idName)) { cout << "IDENTIFIER CHAR*: '" << idName << "'" << endl; }
     IdentifierNode(string idName) : ASTNode("IdentifierNode"), m_id(idName) { cout << "IDENTIFIER STRING: '" << idName << "'" << endl; }
     virtual ~IdentifierNode() {}
 
@@ -13,6 +12,7 @@ public:
     virtual void accept(ASTNodeVisitor &&visitor) { visitor.visit(*this); }
 
     virtual string id() const { return m_id; }
+    virtual void setId(string idName) { m_id = idName; }
 
     virtual void toStream(ostream &out, string indent = "")
     {

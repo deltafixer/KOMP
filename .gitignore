@@ -2,3 +2,4 @@
 *.y.cpp
 *.y.hpp
 *.exe
+*.y.output

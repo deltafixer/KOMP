@@ -2,19 +2,16 @@
 
 #include "ASTNode.hpp"
 
-class AssignmentExpressionNode : public ASTNode
+class FnDefinitionNode : public ASTNode
 {
 public:
-    AssignmentExpressionNode(ASTNode *identifier, ASTNode *expression, ASTNode *expressionSecond = nullptr) : ASTNode("AssignmentExpressionNode")
+    FnDefinitionNode(ASTNode *identifier, ASTNode *params, ASTNode *statements) : ASTNode("FnDefinitionNode")
     {
         pushChild(identifier);
-        pushChild(expression);
-        if (expressionSecond)
-        {
-            pushChild(expressionSecond);
-        }
+        pushChild(params);
+        pushChild(statements);
     }
-    virtual ~AssignmentExpressionNode() {}
+    virtual ~FnDefinitionNode() {}
 
     virtual void accept(ASTNodeVisitor &visitor) { visitor.visit(*this); }
     virtual void accept(ASTNodeVisitor &&visitor) { visitor.visit(*this); }
@@ -26,19 +23,12 @@ public:
         out << subIndent << "\"identifier\": {" << endl;
         m_children[0]->toStream(out, subIndent + indentShift);
         out << subIndent << "}," << endl;
-        out << subIndent << "\"assignmentExpression\": {" << endl;
+        out << subIndent << "\"params\": {" << endl;
         m_children[1]->toStream(out, subIndent + indentShift);
+        out << subIndent << "}," << endl;
+        out << subIndent << "\"statements\": {" << endl;
+        m_children[2]->toStream(out, subIndent + indentShift);
         out << subIndent << "}" << endl;
         out << indent << "}" << endl;
-        if (m_children.size() == 3)
-        {
-            out << subIndent << "\"expression\": {" << endl;
-            m_children[2]->toStream(out, subIndent + indentShift);
-            out << subIndent << "}" << endl;
-            out << indent << "}" << endl;
-        }
     }
-
-protected:
-    int m_id;
 };

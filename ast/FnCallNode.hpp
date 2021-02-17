@@ -2,19 +2,15 @@
 
 #include "ASTNode.hpp"
 
-class AssignmentExpressionNode : public ASTNode
+class FnCallNode : public ASTNode
 {
 public:
-    AssignmentExpressionNode(ASTNode *identifier, ASTNode *expression, ASTNode *expressionSecond = nullptr) : ASTNode("AssignmentExpressionNode")
+    FnCallNode(ASTNode *identifier, ASTNode *args) : ASTNode("FnCallNode")
     {
         pushChild(identifier);
-        pushChild(expression);
-        if (expressionSecond)
-        {
-            pushChild(expressionSecond);
-        }
+        pushChild(args);
     }
-    virtual ~AssignmentExpressionNode() {}
+    virtual ~FnCallNode() {}
 
     virtual void accept(ASTNodeVisitor &visitor) { visitor.visit(*this); }
     virtual void accept(ASTNodeVisitor &&visitor) { visitor.visit(*this); }
@@ -26,19 +22,9 @@ public:
         out << subIndent << "\"identifier\": {" << endl;
         m_children[0]->toStream(out, subIndent + indentShift);
         out << subIndent << "}," << endl;
-        out << subIndent << "\"assignmentExpression\": {" << endl;
+        out << subIndent << "\"args\": {" << endl;
         m_children[1]->toStream(out, subIndent + indentShift);
         out << subIndent << "}" << endl;
         out << indent << "}" << endl;
-        if (m_children.size() == 3)
-        {
-            out << subIndent << "\"expression\": {" << endl;
-            m_children[2]->toStream(out, subIndent + indentShift);
-            out << subIndent << "}" << endl;
-            out << indent << "}" << endl;
-        }
     }
-
-protected:
-    int m_id;
 };

@@ -2,19 +2,15 @@
 
 #include "ASTNode.hpp"
 
-class AssignmentExpressionNode : public ASTNode
+class VarDeclarationNode : public ASTNode
 {
 public:
-    AssignmentExpressionNode(ASTNode *identifier, ASTNode *expression, ASTNode *expressionSecond = nullptr) : ASTNode("AssignmentExpressionNode")
+    VarDeclarationNode(ASTNode *identifier, ASTNode *expression) : ASTNode("VarDeclarationNode")
     {
         pushChild(identifier);
         pushChild(expression);
-        if (expressionSecond)
-        {
-            pushChild(expressionSecond);
-        }
     }
-    virtual ~AssignmentExpressionNode() {}
+    virtual ~VarDeclarationNode() {}
 
     virtual void accept(ASTNodeVisitor &visitor) { visitor.visit(*this); }
     virtual void accept(ASTNodeVisitor &&visitor) { visitor.visit(*this); }
@@ -30,15 +26,5 @@ public:
         m_children[1]->toStream(out, subIndent + indentShift);
         out << subIndent << "}" << endl;
         out << indent << "}" << endl;
-        if (m_children.size() == 3)
-        {
-            out << subIndent << "\"expression\": {" << endl;
-            m_children[2]->toStream(out, subIndent + indentShift);
-            out << subIndent << "}" << endl;
-            out << indent << "}" << endl;
-        }
     }
-
-protected:
-    int m_id;
 };
